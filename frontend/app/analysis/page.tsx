@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@supabase/supabase-js";
@@ -62,8 +64,6 @@ function fmtVal(v: number, decimals = 2): string {
   if (Number.isInteger(v)) return v.toLocaleString();
   return v.toFixed(decimals);
 }
-
-export const revalidate = 3600;
 
 export default async function AnalysisPage() {
   const { metrics: m, totalRecords, threadCount } = await getMoltbookMetrics();

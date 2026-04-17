@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import LiveFeed from "./components/LiveFeed";
@@ -147,8 +149,6 @@ function fmtMetricValue(name: string, value: number): string {
   if (value >= 1) return fmt(value);
   return value.toFixed(3);
 }
-
-export const revalidate = 3600;
 
 export default async function Dashboard() {
   const snapshot = await getLatestSnapshot();
