@@ -1,10 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -13,7 +15,7 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get("q") || "";
   const offset = (page - 1) * limit;
 
-  let query = supabase
+  let query = getSupabase()
     .from("records")
     .select("post_id, thread_id, parent_id, author_id, content, subcommunity, score, ts, meta", { count: "exact" })
     .is("parent_id", null)
@@ -34,7 +36,7 @@ export async function GET(req: NextRequest) {
   let commentCounts: Record<string, number> = {};
 
   if (threadIds.length > 0) {
-    const { data: counts } = await supabase
+    const { data: counts } = await getSupabase()
       .from("records")
       .select("thread_id")
       .in("thread_id", threadIds)

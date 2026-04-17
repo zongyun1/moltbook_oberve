@@ -3,10 +3,10 @@
  * Each function maps to a specific dashboard widget.
  */
 
-import { supabase } from "./supabase";
+import { getSupabase } from "./supabase";
 
 export async function getLatestSnapshot() {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("v_latest_snapshot")
     .select("*")
     .limit(1)
@@ -15,7 +15,7 @@ export async function getLatestSnapshot() {
 }
 
 export async function getSnapshotHistory(limit = 30) {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("v_snapshot_history")
     .select("*")
     .limit(limit);
@@ -23,14 +23,14 @@ export async function getSnapshotHistory(limit = 30) {
 }
 
 export async function getArchetypeCounts() {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("v_archetype_counts")
     .select("*");
   return data || [];
 }
 
 export async function getMetrics(snapshotId: string, category?: string) {
-  let query = supabase
+  let query = getSupabase()
     .from("metrics")
     .select("*")
     .eq("snapshot_id", snapshotId);
@@ -44,7 +44,7 @@ export async function getMetrics(snapshotId: string, category?: string) {
 }
 
 export async function getGeometryDistribution(snapshotId: string) {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("thread_geometry")
     .select("size, depth, width, mean_branching, archetype")
     .eq("snapshot_id", snapshotId);
@@ -52,7 +52,7 @@ export async function getGeometryDistribution(snapshotId: string) {
 }
 
 export async function getTopAuthors(snapshotId: string, limit = 20) {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .rpc("top_authors", { p_snapshot_id: snapshotId, p_limit: limit });
   return data || [];
 }

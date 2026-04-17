@@ -2,14 +2,16 @@ import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import LiveFeed from "./components/LiveFeed";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
 
 async function getLatestSnapshot() {
   // Get all moltbook snapshots and pick the richest one
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("v_latest_snapshot")
     .select("*")
     .like("platform", "moltbook%");
@@ -37,7 +39,7 @@ async function getArchetypes(snapshotIds: string[]) {
   for (const sid of snapshotIds) {
     let offset = 0;
     while (true) {
-      const { data } = await supabase
+      const { data } = await getSupabase()
         .from("thread_geometry")
         .select("archetype")
         .eq("snapshot_id", sid)
@@ -65,7 +67,7 @@ async function getArchetypes(snapshotIds: string[]) {
 }
 
 async function getHistory() {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("v_snapshot_history")
     .select("*")
     .limit(14);
@@ -76,7 +78,7 @@ async function getMetrics(snapshotIds: string[]) {
   // Try snapshots in reverse order (oldest = HF archive = richest data first)
   const reversed = [...snapshotIds].reverse();
   for (const sid of reversed) {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from("metrics")
       .select("category, name, value")
       .eq("snapshot_id", sid)

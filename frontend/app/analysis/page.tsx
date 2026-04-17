@@ -2,14 +2,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
 
 async function getMoltbookMetrics() {
   // Get all moltbook snapshots
-  const { data: snaps } = await supabase
+  const { data: snaps } = await getSupabase()
     .from("v_latest_snapshot")
     .select("*")
     .like("platform", "moltbook%");
@@ -22,7 +24,7 @@ async function getMoltbookMetrics() {
   const reversed = [...snaps].reverse();
   let metricsMap: Record<string, number> = {};
   for (const snap of reversed) {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from("metrics")
       .select("category, name, value")
       .eq("snapshot_id", snap.id)
@@ -39,7 +41,7 @@ async function getMoltbookMetrics() {
   let threadCount = 0;
   const snapshotIds = snaps.map((s: any) => s.id);
   for (const sid of snapshotIds) {
-    const { count } = await supabase
+    const { count } = await getSupabase()
       .from("thread_geometry")
       .select("*", { count: "exact", head: true })
       .eq("snapshot_id", sid);
