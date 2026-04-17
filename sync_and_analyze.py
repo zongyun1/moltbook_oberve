@@ -36,6 +36,13 @@ from pipeline.analyze.network import (
     degree_distribution,
     network_summary,
 )
+from pipeline.analyze.behavioral import (
+    activity_by_hour,
+    activity_by_dow,
+    circadian_strength,
+    linguistic_summary,
+    score_distribution,
+)
 from pipeline.reconstruct.threads import build_forest, validate_forest
 
 
@@ -221,6 +228,50 @@ def run(snapshot_id: str | None = None):
             "name": k,
             "value": float(v),
         })
+
+    # -- Behavioral: Circadian --
+    hourly = activity_by_hour(df)
+    circ = circadian_strength(hourly)
+    for k, v in circ.items():
+        all_metrics.append({
+            "snapshot_id": snapshot_id,
+            "platform": platform,
+            "category": "circadian",
+            "name": k,
+            "value": float(v),
+        })
+    # Store hourly counts as individual metrics for frontend plotting
+    for h in range(24):
+        all_metrics.append({
+            "snapshot_id": snapshot_id,
+            "platform": platform,
+            "category": "circadian",
+            "name": f"hour_{h:02d}",
+            "value": float(hourly[h]),
+        })
+
+    # -- Behavioral: Linguistic --
+    ling = linguistic_summary(df, "content", "author_id")
+    for k, v in ling.items():
+        all_metrics.append({
+            "snapshot_id": snapshot_id,
+            "platform": platform,
+            "category": "linguistic",
+            "name": k,
+            "value": float(v),
+        })
+
+    # -- Behavioral: Score/Karma --
+    if "score" in df.columns:
+        sd = score_distribution(df)
+        for k, v in sd.items():
+            all_metrics.append({
+                "snapshot_id": snapshot_id,
+                "platform": platform,
+                "category": "karma",
+                "name": k,
+                "value": float(v),
+            })
 
     push_metrics(snapshot_id, all_metrics)
 

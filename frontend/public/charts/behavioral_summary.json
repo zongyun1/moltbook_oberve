@@ -1,0 +1,64 @@
+{
+  "moltbook": {
+    "circadian": {
+      "chi2_stat": 4038.17,
+      "chi2_p": 0.0,
+      "coeff_var": 0.3818,
+      "peak_hour": 18,
+      "trough_hour": 21,
+      "peak_trough_ratio": 2.83
+    },
+    "linguistic": {
+      "mean_ttr": 0.7589,
+      "std_ttr": 0.1576,
+      "median_ttr": 0.7636,
+      "mean_words": 134.3,
+      "median_words": 83.0,
+      "std_words": 174.0,
+      "pairwise_mean_similarity": 0.0186,
+      "pairwise_std_similarity": 0.0511,
+      "pairwise_n_pairs": 500,
+      "author_mean_ttr": 0.5344,
+      "author_std_ttr": 0.2198,
+      "n_authors_analyzed": 4225
+    },
+    "karma": {
+      "mean_score": 4.07,
+      "median_score": 0.0,
+      "std_score": 114.73,
+      "max_score": 8014,
+      "min_score": -2,
+      "pct_zero": 78.1,
+      "pct_positive": 21.7,
+      "gini_score": 0.978,
+      "n_scored": 27732
+    },
+    "n_records": 27732
+  },
+  "reddit": {
+    "circadian": {
+      "chi2_stat": 2313.88,
+      "chi2_p": 0.0,
+      "coeff_var": 0.3267,
+      "peak_hour": 21,
+      "trough_hour": 11,
+      "peak_trough_ratio": 3.14
+    },
+    "linguistic": {
+      "mean_ttr": 0.7931,
+      "std_ttr": 0.1596,
+      "median_ttr": 0.8,
+      "mean_words": 90.3,
+      "median_words": 50.0,
+      "std_words": 123.7,
+      "pairwise_mean_similarity": 0.0145,
+      "pairwise_std_similarity": 0.0254,
+      "pairwise_n_pairs": 500,
+      "author_mean_ttr": 0.6184,
+      "author_std_ttr": 0.1934,
+      "n_authors_analyzed": 2830
+    },
+    "karma": {},
+    "n_records": 21677
+  }
+}

@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@supabase/supabase-js";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
 function getSupabase() {
   return createClient(
@@ -49,6 +51,16 @@ async function getMoltbookMetrics() {
   return { metrics: metricsMap, totalRecords, threadCount };
 }
 
+async function getBehavioralSummary() {
+  try {
+    const filePath = join(process.cwd(), "public/charts/behavioral_summary.json");
+    const raw = await readFile(filePath, "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 function fmtDuration(seconds: number): string {
   if (seconds < 60) return `${seconds.toFixed(1)}s`;
   if (seconds < 3600) return `${(seconds / 60).toFixed(1)}m`;
@@ -63,7 +75,11 @@ function fmtVal(v: number, decimals = 2): string {
 
 export default async function AnalysisPage() {
   const { metrics: m, totalRecords, threadCount } = await getMoltbookMetrics();
+  const behavioral = await getBehavioralSummary();
   const g = (key: string, fallback = 0) => m[key] ?? fallback;
+
+  const mb = behavioral?.moltbook;
+  const rb = behavioral?.reddit;
 
   const geometryMetrics = [
     { name: "Mean Size", value: fmtVal(g("geometry/mean_size"), 2) },
@@ -251,6 +267,161 @@ export default async function AnalysisPage() {
             style={{ width: "100%", height: "auto", borderRadius: "8px" }}
           />
         </div>
+
+        {/* ── Behavioral Analysis ── */}
+        {behavioral && (
+          <>
+            <h2 style={{ fontSize: "1.3rem", fontWeight: 700, marginTop: "2.5rem", marginBottom: "1rem", color: "var(--text-primary)" }}>
+              Behavioral Analysis — AI Agents vs Humans
+            </h2>
+
+            <div className="analysis-two-col">
+              {/* Circadian Rhythm */}
+              <div className="obs-card">
+                <div className="obs-card-header">
+                  <h2 className="obs-card-title">Circadian Rhythm</h2>
+                  <span className="obs-badge">temporal</span>
+                </div>
+                <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+                  Human activity follows strong 24-hour cycles tied to sleep and work patterns.
+                  AI agents may show flatter distributions — or reveal operator timezone clustering.
+                </p>
+                <div className="analysis-metric-grid">
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Moltbook CV</span>
+                    <span className="analysis-metric-value">{mb?.circadian?.coeff_var?.toFixed(4)}</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Reddit CV</span>
+                    <span className="analysis-metric-value">{rb?.circadian?.coeff_var?.toFixed(4)}</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Moltbook Peak</span>
+                    <span className="analysis-metric-value">{mb?.circadian?.peak_hour}:00 UTC</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Reddit Peak</span>
+                    <span className="analysis-metric-value">{rb?.circadian?.peak_hour}:00 UTC</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Moltbook Peak/Trough</span>
+                    <span className="analysis-metric-value">{mb?.circadian?.peak_trough_ratio}x</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Reddit Peak/Trough</span>
+                    <span className="analysis-metric-value">{rb?.circadian?.peak_trough_ratio}x</span>
+                  </div>
+                </div>
+                <div className="analysis-chart-stack">
+                  <div className="analysis-chart-item">
+                    <Image src="/charts/b1_circadian.png" alt="Circadian rhythm comparison" width={800} height={400} style={{ width: "100%", height: "auto", borderRadius: "8px" }} />
+                  </div>
+                  <div className="analysis-chart-item">
+                    <Image src="/charts/b1_dow.png" alt="Day of week comparison" width={800} height={400} style={{ width: "100%", height: "auto", borderRadius: "8px" }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Linguistic Homogeneity */}
+              <div className="obs-card">
+                <div className="obs-card-header">
+                  <h2 className="obs-card-title">Linguistic Homogeneity</h2>
+                  <span className="obs-badge">language</span>
+                </div>
+                <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+                  Type-token ratio (TTR) measures vocabulary diversity. Pairwise cosine similarity (TF-IDF) measures
+                  how similarly different posts are written. Lower author TTR suggests LLM monoculture.
+                </p>
+                <div className="analysis-metric-grid">
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Moltbook TTR</span>
+                    <span className="analysis-metric-value">{mb?.linguistic?.mean_ttr?.toFixed(4)}</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Reddit TTR</span>
+                    <span className="analysis-metric-value">{rb?.linguistic?.mean_ttr?.toFixed(4)}</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Moltbook Similarity</span>
+                    <span className="analysis-metric-value">{mb?.linguistic?.pairwise_mean_similarity?.toFixed(4)}</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Reddit Similarity</span>
+                    <span className="analysis-metric-value">{rb?.linguistic?.pairwise_mean_similarity?.toFixed(4)}</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Moltbook Words/Post</span>
+                    <span className="analysis-metric-value">{mb?.linguistic?.mean_words?.toFixed(0)}</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Reddit Words/Post</span>
+                    <span className="analysis-metric-value">{rb?.linguistic?.mean_words?.toFixed(0)}</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Moltbook Author TTR</span>
+                    <span className="analysis-metric-value">{mb?.linguistic?.author_mean_ttr?.toFixed(4)}</span>
+                  </div>
+                  <div className="analysis-metric-cell">
+                    <span className="analysis-metric-name">Reddit Author TTR</span>
+                    <span className="analysis-metric-value">{rb?.linguistic?.author_mean_ttr?.toFixed(4)}</span>
+                  </div>
+                </div>
+                <div className="analysis-chart-stack">
+                  <div className="analysis-chart-item">
+                    <Image src="/charts/b2_linguistic.png" alt="Linguistic comparison" width={800} height={400} style={{ width: "100%", height: "auto", borderRadius: "8px" }} />
+                  </div>
+                  <div className="analysis-chart-item">
+                    <Image src="/charts/b2_ttr_dist.png" alt="TTR distribution" width={800} height={400} style={{ width: "100%", height: "auto", borderRadius: "8px" }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Karma Economy — full width */}
+            <div className="obs-card" style={{ marginTop: "1.5rem" }}>
+              <div className="obs-card-header">
+                <h2 className="obs-card-title">Karma Economy</h2>
+                <span className="obs-badge">engagement</span>
+              </div>
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+                Score distribution reveals engagement quality. Human communities show heavy-tailed power-law distributions.
+                A flat distribution with most scores at zero suggests agents interact without meaningful evaluation —
+                the voting mechanism is performative rather than functional.
+              </p>
+              <div className="analysis-metric-grid">
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">Mean Score</span>
+                  <span className="analysis-metric-value">{mb?.karma?.mean_score?.toFixed(2)}</span>
+                </div>
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">Median Score</span>
+                  <span className="analysis-metric-value">{mb?.karma?.median_score}</span>
+                </div>
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">% Zero Score</span>
+                  <span className="analysis-metric-value">{mb?.karma?.pct_zero}%</span>
+                </div>
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">% Positive</span>
+                  <span className="analysis-metric-value">{mb?.karma?.pct_positive}%</span>
+                </div>
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">Gini (Score)</span>
+                  <span className="analysis-metric-value">{mb?.karma?.gini_score}</span>
+                </div>
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">Max Score</span>
+                  <span className="analysis-metric-value">{mb?.karma?.max_score?.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="analysis-chart-stack">
+                <div className="analysis-chart-item">
+                  <Image src="/charts/b3_scores.png" alt="Score distribution" width={800} height={400} style={{ width: "100%", height: "auto", borderRadius: "8px" }} />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <footer className="obs-footer">
