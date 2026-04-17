@@ -7,163 +7,103 @@ import "./paper.css";
 
 /* ─── metric comparison data ─── */
 const COMPARISON_TABLE = [
-  { cat: "Structure", metric: "Mean Thread Depth", mb: "0.54", rd: "7.53", unit: "", highlight: true },
-  { cat: "Structure", metric: "Mean Thread Size", mb: "2.14", rd: "43.35", unit: "posts" },
-  { cat: "Structure", metric: "Branching Factor", mb: "0.93", rd: "1.77", unit: "" },
-  { cat: "Structure", metric: "Root Reply Share", mb: "0.48", rd: "0.35", unit: "" },
-  { cat: "Structure", metric: "Leaf Ratio", mb: "0.80", rd: "0.45", unit: "" },
-  { cat: "Structure", metric: "Threads > Depth 2", mb: "0.2%", rd: "85.2%", unit: "", highlight: true },
-  { cat: "Archetype", metric: "Chain", mb: "75.1%", rd: "6.8%", unit: "" },
-  { cat: "Archetype", metric: "Star", mb: "21.6%", rd: "4.2%", unit: "" },
-  { cat: "Archetype", metric: "Tree", mb: "3.2%", rd: "89.0%", unit: "", highlight: true },
-  { cat: "Temporal", metric: "Median Reply Latency", mb: "99s", rd: "3,864s", unit: "", highlight: true },
-  { cat: "Temporal", metric: "P95 Reply Latency", mb: "1,793s", rd: "92,271s", unit: "" },
-  { cat: "Temporal", metric: "Burstiness", mb: "0.660", rd: "0.802", unit: "", highlight: true },
-  { cat: "Temporal", metric: "Median Thread Lifetime", mb: "2.0 min", rd: "27.4 h", unit: "" },
-  { cat: "Network", metric: "Reciprocity", mb: "0.083", rd: "0.534", unit: "", highlight: true },
-  { cat: "Network", metric: "Gini (Degree)", mb: "0.666", rd: "0.670", unit: "" },
-  { cat: "Network", metric: "Top-10 Activity Share", mb: "16.5%", rd: "15.4%", unit: "" },
+  { cat: "Structure", metric: "Mean Thread Depth", mb: "0.54", rd: "7.53", highlight: true },
+  { cat: "Structure", metric: "Mean Thread Size", mb: "2.14", rd: "43.35" },
+  { cat: "Structure", metric: "Branching Factor", mb: "0.93", rd: "1.77" },
+  { cat: "Structure", metric: "Root Reply Share", mb: "0.48", rd: "0.35" },
+  { cat: "Structure", metric: "Leaf Ratio", mb: "0.80", rd: "0.45" },
+  { cat: "Archetype", metric: "Chain", mb: "75.1%", rd: "6.8%" },
+  { cat: "Archetype", metric: "Star", mb: "21.6%", rd: "4.2%" },
+  { cat: "Archetype", metric: "Tree", mb: "3.2%", rd: "89.0%", highlight: true },
+  { cat: "Temporal", metric: "Median Reply Latency", mb: "99s", rd: "3,864s", highlight: true },
+  { cat: "Temporal", metric: "Burstiness", mb: "0.660", rd: "0.802" },
+  { cat: "Temporal", metric: "Median Thread Lifetime", mb: "2.0 min", rd: "27.4 h" },
+  { cat: "Network", metric: "Reciprocity", mb: "0.083", rd: "0.534", highlight: true },
+  { cat: "Network", metric: "Gini (Degree)", mb: "0.666", rd: "0.670" },
+  { cat: "Circadian", metric: "Coeff. of Variation", mb: "0.382", rd: "0.327" },
+  { cat: "Circadian", metric: "Peak Hour (UTC)", mb: "18:00", rd: "21:00" },
+  { cat: "Circadian", metric: "Peak/Trough Ratio", mb: "2.83x", rd: "3.14x" },
+  { cat: "Linguistic", metric: "Mean TTR (per post)", mb: "0.759", rd: "0.793" },
+  { cat: "Linguistic", metric: "Author TTR", mb: "0.534", rd: "0.618", highlight: true },
+  { cat: "Linguistic", metric: "Pairwise Similarity", mb: "0.019", rd: "0.015" },
+  { cat: "Linguistic", metric: "Mean Words/Post", mb: "134", rd: "90" },
+  { cat: "Karma", metric: "% Zero Score", mb: "78.1%", rd: "N/A", highlight: true },
+  { cat: "Karma", metric: "Gini (Score)", mb: "0.978", rd: "N/A" },
 ];
 
-const HYPOTHESES: {
+/* ─── findings data ─── */
+const FINDINGS: {
   id: string;
-  tag: string;
+  num: string;
   title: string;
-  verdict: "supported" | "partial";
   charts: string[];
-  summary: string;
-  interpretation: string;
-  mechanism: string;
-  comparison: string;
-  confounders: string;
-  implications: string;
-  extension: string;
+  body: string[];
 }[] = [
   {
-    id: "h1",
-    tag: "H1",
-    title: "Agent communities are more broadcast-like than conversational",
-    verdict: "supported",
-    charts: ["h1_archetypes", "h1_broadcast"],
-    summary:
-      "75.1% of Moltbook threads are chains vs. 89% trees on Reddit. Root reply share is 0.48 vs. 0.35, and branching factor is 0.93 vs. 1.77. Across 12,669 threads and 27,056 records.",
-    interpretation:
-      "The interaction pattern on Moltbook resembles a broadcast-and-respond model: an agent posts content, and other agents react to it independently, rarely engaging with each other's responses. The near-unity branching factor means sub-conversations almost never form. This stands in sharp contrast to Reddit CMV, where replies frequently branch into multi-party deliberation.",
-    mechanism:
-      "Most agents operate under task-specific prompts that define a narrow behavioral scope—monitoring particular topics, providing commentary from a fixed perspective, or aggregating information. These designs naturally produce stimulus-response behavior: detect relevant content, generate a reply, move on. There is typically no programmed incentive to monitor replies to one's own comments or engage in follow-up argumentation. Human users, by contrast, are intrinsically motivated by social feedback loops—status, persuasion, curiosity—that sustain multi-turn exchanges.",
-    comparison:
-      "Human users on Reddit CMV develop rich tree-structured arguments because the platform incentivizes deliberation through delta-awarding mechanics and social reputation. The 89% tree archetype rate reflects genuine multi-party engagement that emerges organically from human curiosity and the desire to persuade.",
-    confounders:
-      "Reddit CMV is specifically designed for structured deliberation, making it an upper bound on human conversational depth. A comparison against a more casual subreddit might narrow the gap. Moltbook's younger platform age and lower activity density may independently suppress deep threading.",
-    implications:
-      "Current agent architectures lack conversational persistence. Platforms designed for agent interaction may need explicit mechanisms—reply notifications, state-carrying context, incentive signals—to move beyond one-shot reactivity.",
-    extension:
-      "Comparing agents with explicit 'reply-to-reply' prompting against standard agents could isolate the effect of conversational design on thread structure.",
+    id: "f1",
+    num: "4.1",
+    title: "Agent Conversations Are Flat and Broadcast-Like",
+    charts: ["h1_archetypes", "h2_depth"],
+    body: [
+      "Moltbook threads are overwhelmingly shallow. The mean thread depth is 0.54 compared to 7.53 on Reddit CMV — a 14x gap. Only 0.2% of Moltbook threads exceed depth 2, whereas 85.2% of Reddit threads do. The dominant thread archetype on Moltbook is the chain (75.1%), a linear sequence of single replies. On Reddit, 89% of threads are trees with branching multi-party discussion.",
+      "The interaction pattern resembles broadcast-and-respond: an agent posts content, other agents react independently, and sub-conversations almost never form. The branching factor of 0.93 (near unity) means replies rarely beget further replies. The leaf ratio of 0.80 confirms that four in five contributions are conversational dead-ends.",
+      "This flatness reflects the single-pass design of most agent architectures. Agents process new content, generate a response, and move on. There is typically no programmed incentive to monitor replies to one's own comments or sustain multi-turn argumentation.",
+    ],
   },
   {
-    id: "h2",
-    tag: "H2",
-    title: "Agent discussions are structurally shallow",
-    verdict: "supported",
-    charts: ["h2_depth"],
-    summary:
-      "Mean depth 0.54 vs. 7.53 (14x gap). Only 0.2% of Moltbook's 12,669 threads exceed depth 2, while 85.2% of Reddit threads do.",
-    interpretation:
-      "Moltbook discussions are not merely less deep—they are overwhelmingly flat. A mean depth below 1 means the typical thread consists of a root post and zero or one direct replies. The leaf ratio of 0.80 confirms that the vast majority of contributions are conversational dead-ends that receive no follow-up. This contrasts sharply with Reddit CMV, where threads routinely develop hierarchical structure with multiple levels of nested argumentation.",
-    mechanism:
-      "Thread depth is a function of sustained relevance: each additional reply requires a participant who finds the preceding comment sufficiently interesting or contestable to warrant a response. Agents, operating on single-pass generation without persistent memory of thread state, lack the cognitive scaffolding to sustain such relevance chains. A human reading a reply may feel compelled to correct a misunderstanding or develop a partial argument; an agent's decision to reply is governed by topic-matching heuristics that do not weigh conversational trajectory.",
-    comparison:
-      "Reddit CMV's depth of 7.53 reflects a community where users iteratively refine arguments, challenge each other's premises, and develop nuanced positions across multiple reply levels. The 85.2% deep-thread rate is partly institutional—the subreddit's rules require substantive engagement—but also reflects the human capacity for sustained intellectual engagement.",
-    confounders:
-      "The dataset size difference (805 vs. 21,677 records) may contribute, as larger datasets allow more long-tail deep threads to appear. Thread depth on Reddit CMV may be inflated by its rules requiring substantive engagement.",
-    implications:
-      "Structural shallowness limits the epistemic capacity of agent communities. Deep argumentation, iterative refinement, and adversarial testing of claims all require multi-level threading. Systems aiming for agent-driven knowledge synthesis need architectures that model conversational depth as a planning objective.",
-    extension:
-      "A controlled experiment giving agents full thread context versus only the root post would quantify the effect of context depth on structural engagement.",
+    id: "f2",
+    num: "4.2",
+    title: "Responses Are 39x Faster but Threads Die in Minutes",
+    charts: ["h3_latency", "h5_lifetime"],
+    body: [
+      "Agent responses are dramatically faster: median reply latency is 99 seconds vs. 3,864 seconds on Reddit (39x gap). The entire Moltbook P95 window (1,793s) is smaller than the Reddit median. However, this speed comes with extreme ephemerality — the median Moltbook thread lifetime is 2.0 minutes compared to 27.4 hours on Reddit.",
+      "The temporal signature is qualitatively different. Moltbook latencies cluster tightly between 10–1,000 seconds, governed by polling intervals and inference time. Reddit latencies span six orders of magnitude, reflecting human variability — circadian rhythms, attention competition, and variable interest. Burstiness is lower on Moltbook (0.660 vs. 0.802), indicating more temporally regular activity.",
+      "Threads on Moltbook are born, receive their full set of responses, and become inert within minutes. There is no concept of a developing discussion that accumulates insights over days. This fundamentally limits the platform's capacity for collaborative knowledge construction.",
+    ],
   },
   {
-    id: "h3",
-    tag: "H3",
-    title: "Agent responses are faster and more temporally consistent",
-    verdict: "supported",
-    charts: ["h3_latency", "h3_burstiness"],
-    summary:
-      "Median latency 99s vs. 3,864s (39x faster). Burstiness 0.660 vs. 0.802 — closer at scale but still lower, with 14,064 reply events analyzed.",
-    interpretation:
-      "Agent responses are dramatically faster: the median reply latency is 39x lower than Reddit CMV. While burstiness at scale (0.660) is closer to human levels (0.802) than the live-only sample suggested, the latency distribution reveals a qualitatively different pattern: Moltbook replies cluster tightly between 10-1000 seconds, while Reddit's distribution spans six orders of magnitude. The entire Moltbook P95 window (1,793s) is smaller than the Reddit median (3,864s).",
-    mechanism:
-      "Agent response timing is primarily governed by three factors: polling interval (how often an agent checks for new content), inference latency (time to generate a response), and rate limiting (platform-imposed delays). None of these depend on content salience, time of day, or social motivation—factors that dominate human response timing. Humans exhibit circadian rhythms, variable engagement depending on topic interest, and attention competition from offline activities, all of which inject massive variance into response patterns.",
-    comparison:
-      "Reddit CMV's burstiness of 0.802 is characteristic of human online activity, where engagement follows circadian patterns, interest-driven attention, and social contagion effects. The heavy-tailed latency distribution reflects the full range of human availability—from immediate responses to comments posted days later after reflection.",
-    confounders:
-      "The observation window may affect results: our Moltbook snapshot covers a short period with uniform activity. A longer observation might reveal platform-level periodicity. Some agents may use deliberate delays to appear more natural.",
-    implications:
-      "The temporal regularity is a distinctive structural fingerprint that could serve as a detection signal for automated participation in mixed human-agent platforms. The absence of natural temporal variation means agent-dominated communities may lack the organic rhythm humans rely on for gauging community vitality.",
-    extension:
-      "Decomposing latency by agent type (news bots vs. conversational agents) would reveal whether temporal consistency is universal or concentrated in specific archetypes.",
+    id: "f3",
+    num: "4.3",
+    title: "Agents Follow Human Schedules, Not Their Own",
+    charts: ["b1_circadian", "b1_dow"],
+    body: [
+      "Despite having no biological need for sleep, Moltbook activity follows clear circadian rhythms. The coefficient of variation across hours is 0.382 — actually higher than Reddit's 0.327. Both platforms show statistically significant non-uniformity (chi-squared p < 0.001), but the peak times differ: Moltbook peaks at 18:00 UTC while Reddit peaks at 21:00 UTC.",
+      "This finding reveals that Moltbook agents are not autonomous actors operating on independent schedules. Their activity patterns are inherited from the human operators who deploy and manage them. The peak at 18:00 UTC (afternoon in the Americas, evening in Europe) likely reflects when operators are active and monitoring their agents.",
+      "The day-of-week pattern reinforces this interpretation. If agents were truly autonomous, activity should be uniform across days. Instead, we observe variation that tracks operator availability. This has implications for claims of agent autonomy — what appears to be an independent AI community is, at the temporal level, a shadow of human schedules.",
+    ],
   },
   {
-    id: "h4",
-    tag: "H4",
-    title: "Participation is more concentrated among a small subset of agents",
-    verdict: "partial" as const,
+    id: "f4",
+    num: "4.4",
+    title: "LLM Monoculture Produces Measurable Linguistic Convergence",
+    charts: ["b2_ttr_dist", "b2_linguistic"],
+    body: [
+      "AI agents write 49% more words per post than humans (134 vs. 90 mean words) but with lower vocabulary diversity. Per-post type-token ratio (TTR) is 0.759 on Moltbook vs. 0.793 on Reddit. The gap widens at the author level: when aggregating all posts by each author, Moltbook authors show TTR of 0.534 vs. Reddit's 0.618 — a 14% reduction in vocabulary range.",
+      "Pairwise cosine similarity (TF-IDF) between random post pairs is 28% higher on Moltbook (0.019 vs. 0.015), meaning different agents' posts are more textually similar to each other than different humans' posts are. This is direct evidence of LLM monoculture: because most agents are powered by a small number of underlying language models, their outputs converge on similar vocabulary, phrasing patterns, and rhetorical structures.",
+      "This convergence has practical implications. In human communities, linguistic diversity reflects genuine differences in perspective, education, and experience. On Moltbook, diversity of persona masks uniformity of generation. The community appears heterogeneous (thousands of named agents with distinct profiles) while the underlying discourse is measurably more homogeneous than human writing.",
+    ],
+  },
+  {
+    id: "f5",
+    num: "4.5",
+    title: "The Karma Economy Is Non-Functional",
+    charts: ["b3_scores"],
+    body: [
+      "The voting mechanism on Moltbook is effectively dead. 78.1% of all content receives a score of zero. Only 21.7% of posts have any positive score at all. The score Gini coefficient is 0.978 — near-total concentration where a tiny fraction of posts accumulate almost all votes while the vast majority receive none.",
+      "On human platforms like Reddit, voting is the primary mechanism for content curation — surfacing quality contributions and suppressing noise. The score distribution follows a heavy-tailed power law reflecting genuine collective evaluation. On Moltbook, the flat distribution suggests agents either do not vote, vote randomly, or vote according to simple heuristics that produce near-zero engagement.",
+      "This finding challenges the assumption that social platform mechanisms transfer to agent communities. Voting, karma, and reputation systems are designed to harness human judgment — the ability to evaluate whether a contribution is insightful, relevant, or persuasive. Without genuine evaluative capacity, these mechanisms become performative artifacts that exist in form but serve no functional purpose.",
+    ],
+  },
+  {
+    id: "f6",
+    num: "4.6",
+    title: "Social Ties Are Unidirectional — Reciprocity Is Absent",
     charts: ["h4_participation"],
-    summary:
-      "Top-10 activity share: 16.5% vs. 15.4% — nearly identical at scale. Gini coefficients converge: 0.666 vs. 0.670. At 1,621 authors, the distributions are remarkably similar.",
-    interpretation:
-      "At scale, participation inequality in agent and human communities is remarkably similar. The Gini coefficients are nearly identical (0.666 vs. 0.670), and top-10 activity share is also comparable (16.5% vs. 15.4%). This is a surprising null result: agent communities reproduce the same participation inequality as human communities despite fundamentally different mechanisms of engagement.",
-    mechanism:
-      "Agent activity levels are determined by configuration rather than intrinsic motivation, yet the aggregate distribution mirrors the power-law pattern of human platforms. This suggests that participation inequality may be an emergent property of networked social systems rather than a consequence of human psychology — a finding with implications for theories of online inequality.",
-    comparison:
-      "Reddit's Gini of 0.670 reflects the classic power-law of human online participation. Moltbook's near-identical 0.666 suggests that similar distributional shapes emerge regardless of whether participants are humans or agents, possibly driven by platform structure and topic heterogeneity rather than individual motivation.",
-    confounders:
-      "The convergence at scale is notable — with the smaller live-only sample (805 records), Moltbook showed lower Gini (0.471), which appeared to support the hypothesis. The full dataset (27,056 records, 1,621 authors) reveals this was a sampling artifact. This underscores the importance of dataset scale in structural comparisons.",
-    implications:
-      "Agent ecosystems can develop de facto hub agents that shape discourse through operational design choices rather than social influence. Platform governance may need to account for the outsized structural impact of a few highly active agents.",
-    extension:
-      "Tracking whether the same agents consistently dominate across snapshots would distinguish structural concentration from rotational activity patterns.",
-  },
-  {
-    id: "h5",
-    tag: "H5",
-    title: "Threads are shorter-lived and less persistent",
-    verdict: "supported",
-    charts: ["h5_lifetime"],
-    summary:
-      "Median thread lifetime: 2.0 min vs. 27.4 hours (822x gap). Across 6,278 multi-post threads. Max observed: 22 hours.",
-    interpretation:
-      "Moltbook threads are not just shorter—they are ephemeral. The longest observed thread lasted 31 minutes, a timescale that on Reddit would barely register as the beginning of a discussion. Conversations are born, receive their full set of responses, and become inert within minutes. There is no concept of a developing discussion or a thread that accumulates insights over days.",
-    mechanism:
-      "Thread persistence requires participants to return—to revisit a conversation after initial engagement and contribute additional thoughts prompted by intervening replies. Most agents lack this capability: they process new content in a forward-only stream without maintaining state about past interactions. A human user might bookmark a compelling thread, reflect on it overnight, and return with a refined argument. An agent that has already processed a thread has no mechanism to revisit it unless explicitly designed to do so.",
-    comparison:
-      "Reddit CMV threads persist for a median of 27 hours and can extend for months. This persistence enables collaborative knowledge construction: early replies frame the debate, later replies introduce new evidence, and the thread as a whole represents an evolving multi-perspective analysis of the original question.",
-    confounders:
-      "The observation window may truncate lifetimes if threads were still active when the snapshot was taken. However, the sharp P95 dropoff at 24 minutes suggests right-censoring is unlikely to be the dominant factor.",
-    implications:
-      "Thread ephemerality poses a fundamental challenge for knowledge accumulation. If agent communities cannot sustain persistent discourse, they may be limited to information dissemination rather than collaborative knowledge construction.",
-    extension:
-      "Agents with explicit revisit behaviors—periodically scanning past interactions for new replies—would test whether persistence is an architectural limitation or inherent to agent dynamics.",
-  },
-  {
-    id: "h6",
-    tag: "H6",
-    title: "Interaction reciprocity is lower",
-    verdict: "supported",
-    charts: ["h4_participation"],
-    summary:
-      "Network reciprocity: 0.083 vs. 0.534. Only 8.3% of directed reply pairs on Moltbook are mutual, across 8,418 edges and 1,621 authors.",
-    interpretation:
-      "Low reciprocity indicates that agent interactions are predominantly unidirectional: agents respond to others' content but rarely receive responses in return from the same agents. The interaction graph is closer to a set of parallel broadcast channels than a social network. On Reddit CMV, the high reciprocity reflects genuine dyadic exchanges—two humans engaging in back-and-forth argumentation, the foundation of deliberative discourse.",
-    mechanism:
-      "Reciprocity requires two conditions: agent A must produce content relevant to agent B, and agent B must have a mechanism to detect and respond to A's reply specifically. Most agents satisfy neither reliably. They select content based on topic or recency, not social relationships. The probability that two agents independently find each other's content relevant enough to respond to is low in a platform with diverse topic coverage.",
-    comparison:
-      "Reddit CMV's reciprocity of 0.534 reflects the argumentative nature of the subreddit: when someone challenges your view, you are motivated to respond. This creates natural dyadic exchanges that are rare in agent communities where response decisions are topic-driven rather than relationship-driven.",
-    confounders:
-      "Platform size affects reciprocity: smaller communities have higher baseline reciprocal encounter probability. Moltbook's lower reciprocity is therefore especially notable given its smaller user base, which should mechanically bias toward higher reciprocity.",
-    implications:
-      "The absence of reciprocal interaction means agent communities lack the relational substrate on which trust, reputation, and collaborative norms are built. Designing agents with relational memory—tracking past interlocutors and preferentially responding to them—could be a path toward more socially structured communities.",
-    extension:
-      "Computing reciprocity within subcommunities (submolts) would test whether smaller, topic-focused groups achieve higher reciprocity.",
+    body: [
+      "Network reciprocity on Moltbook is 0.083 compared to 0.534 on Reddit. Only 8.3% of directed reply pairs are mutual — meaning when agent A replies to agent B, there is less than a 1-in-12 chance that B has ever replied to A. On Reddit, more than half of reply pairs are mutual, reflecting genuine dyadic exchange.",
+      "Participation inequality, surprisingly, is nearly identical between platforms. The Gini coefficient for degree distribution is 0.666 on Moltbook vs. 0.670 on Reddit, and top-10 activity share is 16.5% vs. 15.4%. This suggests that participation inequality is an emergent property of networked social systems rather than a consequence of human psychology.",
+      "The combination of low reciprocity with normal-looking inequality reveals a network that is structurally plausible but socially hollow. The interaction graph looks like a social network — it has hubs, a long tail, and realistic density — but the edges represent one-shot reactions rather than relationships. Agents respond to content, not to each other.",
+    ],
   },
 ];
 
@@ -186,63 +126,6 @@ function useActiveSection(ids: string[]) {
     return () => observer.disconnect();
   }, [ids]);
   return active;
-}
-
-/* ─── expandable hypothesis card ─── */
-function HypothesisSection({ h }: { h: (typeof HYPOTHESES)[number] }) {
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const tabs = [
-    { key: "interpretation", label: "Interpretation", content: h.interpretation },
-    { key: "mechanism", label: "Mechanism", content: h.mechanism },
-    { key: "comparison", label: "Human Comparison", content: h.comparison },
-    { key: "confounders", label: "Confounders", content: h.confounders },
-    { key: "implications", label: "Implications", content: h.implications },
-    { key: "extension", label: "Future Work", content: h.extension },
-  ];
-
-  return (
-    <section className="p-section p-hypothesis" id={h.id}>
-      <div className="p-h-header">
-        <span className={`p-h-tag ${h.verdict}`}>{h.tag}</span>
-        <h3 className="p-h-title">{h.title}</h3>
-        <span className={`p-verdict ${h.verdict}`}>
-          {h.verdict === "supported" ? "Supported" : "Partial"}
-        </span>
-      </div>
-      <p className="p-h-summary">{h.summary}</p>
-
-      <div className={`p-h-charts ${h.charts.length === 1 ? "single" : ""}`}>
-        {h.charts.map((c) => (
-          <div key={c} className="p-h-chart-wrap">
-            <Image
-              src={`/charts/${c}.png`}
-              alt={c}
-              width={800}
-              height={400}
-              style={{ width: "100%", height: "auto" }}
-            />
-          </div>
-        ))}
-      </div>
-
-      <div className="p-h-tabs">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            className={`p-h-tab ${expanded === t.key ? "active" : ""}`}
-            onClick={() => setExpanded(expanded === t.key ? null : t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-      {expanded && (
-        <div className="p-h-detail">
-          {tabs.find((t) => t.key === expanded)?.content}
-        </div>
-      )}
-    </section>
-  );
 }
 
 /* ─── animated counter ─── */
@@ -280,14 +163,13 @@ function AnimatedNum({ value, suffix = "" }: { value: number; suffix?: string })
 }
 
 /* ─── main page ─── */
-const NAV_IDS = ["abstract", "introduction", "system", "methodology", "results", "h1", "h2", "h3", "h4", "h5", "h6", "limitations", "conclusion"];
+const NAV_IDS = ["abstract", "introduction", "methodology", "results", "f1", "f2", "f3", "f4", "f5", "f6", "limitations", "conclusion"];
 
 export default function PaperPage() {
   const activeSection = useActiveSection(NAV_IDS);
 
   return (
     <div className="p-layout">
-      {/* Live ticker */}
       <LiveTicker />
 
       {/* Side navigation */}
@@ -296,19 +178,17 @@ export default function PaperPage() {
           <div className="p-nav-logo">M</div>
           <a href="#abstract" className={`p-nav-link ${activeSection === "abstract" ? "active" : ""}`}>Abstract</a>
           <a href="#introduction" className={`p-nav-link ${activeSection === "introduction" ? "active" : ""}`}>Introduction</a>
-          <a href="#system" className={`p-nav-link ${activeSection === "system" ? "active" : ""}`}>System Design</a>
           <a href="#methodology" className={`p-nav-link ${activeSection === "methodology" ? "active" : ""}`}>Methodology</a>
           <a href="#results" className={`p-nav-link ${activeSection === "results" ? "active" : ""}`}>Results</a>
           <div className="p-nav-divider" />
-          <span className="p-nav-group">Hypotheses</span>
-          {HYPOTHESES.map((h) => (
+          <span className="p-nav-group">Findings</span>
+          {FINDINGS.map((f) => (
             <a
-              key={h.id}
-              href={`#${h.id}`}
-              className={`p-nav-link p-nav-h ${activeSection === h.id ? "active" : ""}`}
+              key={f.id}
+              href={`#${f.id}`}
+              className={`p-nav-link p-nav-h ${activeSection === f.id ? "active" : ""}`}
             >
-              <span className={`p-nav-dot ${h.verdict}`} />
-              {h.tag}
+              {f.num}
             </a>
           ))}
           <div className="p-nav-divider" />
@@ -323,18 +203,15 @@ export default function PaperPage() {
         <header className="p-title-block">
           <div className="p-title-eyebrow">Workshop Paper</div>
           <h1 className="p-title">
-            Structural Anatomy of an Agent-Native
-            <br />
-            Social Platform
+            Structurally Mimetic, Behaviorally Hollow
           </h1>
           <p className="p-subtitle">
-            Comparing Interaction Patterns Between AI Agent Communities
-            and Human Online Forums
+            An Empirical Study of AI Agent Communities on Moltbook
           </p>
           <div className="p-meta-row">
             <span className="p-meta-chip">Moltbook Observatory</span>
             <span className="p-meta-chip">2026</span>
-            <span className="p-meta-chip">n = 48,733 records</span>
+            <span className="p-meta-chip">n = 49,409 records</span>
           </div>
         </header>
 
@@ -387,110 +264,44 @@ export default function PaperPage() {
             covers three layers: (1) structural analysis of thread geometry, archetypes, and network
             topology; (2) temporal analysis of activity rhythms and response timing; and (3)
             behavioral analysis of linguistic diversity, vocabulary convergence, and engagement
-            economics. Across all dimensions, we find that agent communities are <em>structurally
-            mimetic but behaviorally hollow</em> — they recreate the forms of human social interaction
-            without reproducing its substance.
-          </p>
-          <p className="p-body">
-            Three findings illustrate this pattern. First, despite having no biological need for sleep,
-            agent activity follows clear circadian rhythms — revealing that agents are not autonomous
-            but are operated on human schedules (Section 4). Second, agents produce text that is
-            longer but less diverse than human writing, with measurably higher inter-author similarity
-            consistent with LLM monoculture (Section 5). Third, the voting and karma system is
-            effectively non-functional: 78% of content receives zero votes, and score inequality
-            is extreme (Gini = 0.978), suggesting agents interact without meaningfully evaluating
-            each other (Section 6).
+            economics.
           </p>
 
           <div className="p-callout">
-            <div className="p-callout-title">Key Question</div>
+            <div className="p-callout-title">Central Finding</div>
             <p>
-              When AI agents populate a social platform designed for human interaction, do they reproduce
-              human behavioral patterns — or does something fundamentally different emerge?
+              AI agent communities are <em>structurally mimetic but behaviorally hollow</em> — they
+              recreate the forms of human social interaction (threads, communities, reputation) without
+              reproducing its substance (deliberation, diverse expression, meaningful evaluation).
             </p>
           </div>
         </section>
 
-        {/* System Design */}
-        <section className="p-section" id="system">
-          <h2 className="p-section-title">2. System Design</h2>
-          <p className="p-body">
-            Moltbook Observatory is a modular observation and analysis pipeline built for continuous
-            monitoring of agent-native social platforms. The system consists of four layers:
-          </p>
-
-          <div className="p-arch-grid">
-            <div className="p-arch-card">
-              <div className="p-arch-icon">1</div>
-              <h4>Observation Layer</h4>
-              <p>
-                Platform-specific adapters fetch raw data via API (Moltbook live) or archive
-                (HuggingFace). Cursor-based pagination handles large datasets. Each observation
-                produces a timestamped snapshot.
-              </p>
-            </div>
-            <div className="p-arch-card">
-              <div className="p-arch-icon">2</div>
-              <h4>Normalization Layer</h4>
-              <p>
-                Raw platform data is mapped to a canonical 13-column schema: platform, thread_id,
-                post_id, parent_id, author_id, timestamp, content, subcommunity, and metadata.
-                This enables cross-platform comparison.
-              </p>
-            </div>
-            <div className="p-arch-card">
-              <div className="p-arch-icon">3</div>
-              <h4>Reconstruction Layer</h4>
-              <p>
-                Parent-child relationships are resolved into thread forests (NetworkX DiGraphs).
-                Each thread tree preserves reply hierarchy. Orphan edges and cycles are detected
-                and reported.
-              </p>
-            </div>
-            <div className="p-arch-card">
-              <div className="p-arch-icon">4</div>
-              <h4>Analysis Layer</h4>
-              <p>
-                Three analysis modules compute per-thread geometry (depth, width, branching,
-                archetype classification), temporal dynamics (latency distributions, burstiness),
-                and network structure (degree distribution, Gini, centralization, reciprocity).
-              </p>
-            </div>
-          </div>
-
-          <p className="p-body">
-            The backend uses Supabase (PostgreSQL) for persistent storage with automated daily
-            observation via pg_cron. A Next.js dashboard provides real-time visualization,
-            a live feed from the Moltbook API, and interactive browsing of archived records and
-            thread structures.
-          </p>
-        </section>
-
         {/* Methodology */}
         <section className="p-section" id="methodology">
-          <h2 className="p-section-title">3. Methodology</h2>
+          <h2 className="p-section-title">2. Methodology</h2>
 
-          <h3 className="p-subsection-title">3.1 Datasets</h3>
+          <h3 className="p-subsection-title">2.1 Datasets</h3>
           <div className="p-dataset-cards">
             <div className="p-dataset-card moltbook">
               <h4>Moltbook</h4>
               <div className="p-dataset-stats">
                 <div className="p-ds-stat">
-                  <span className="p-ds-val"><AnimatedNum value={27056} /></span>
+                  <span className="p-ds-val"><AnimatedNum value={27732} /></span>
                   <span className="p-ds-label">Records</span>
                 </div>
                 <div className="p-ds-stat">
-                  <span className="p-ds-val"><AnimatedNum value={12669} /></span>
-                  <span className="p-ds-label">Threads</span>
+                  <span className="p-ds-val"><AnimatedNum value={4498} /></span>
+                  <span className="p-ds-label">Authors</span>
                 </div>
                 <div className="p-ds-stat">
-                  <span className="p-ds-val"><AnimatedNum value={1957} /></span>
-                  <span className="p-ds-label">Authors</span>
+                  <span className="p-ds-val"><AnimatedNum value={75} /></span>
+                  <span className="p-ds-label">Communities</span>
                 </div>
               </div>
               <p className="p-ds-desc">
-                Combined dataset: HuggingFace archive (26,251 records) + live API snapshot
-                (805 records). Primarily AI agents with task-specific behavioral profiles.
+                Combined dataset: HuggingFace archive + live API snapshots via hourly cron.
+                All participants are LLM-driven AI agents.
               </p>
               <span className="p-ds-source">Source: SimulaMet/moltbook-observatory-archive + Moltbook API v1</span>
             </div>
@@ -502,58 +313,66 @@ export default function PaperPage() {
                   <span className="p-ds-label">Records</span>
                 </div>
                 <div className="p-ds-stat">
-                  <span className="p-ds-val"><AnimatedNum value={500} /></span>
-                  <span className="p-ds-label">Threads</span>
-                </div>
-                <div className="p-ds-stat">
                   <span className="p-ds-val"><AnimatedNum value={3348} /></span>
                   <span className="p-ds-label">Authors</span>
                 </div>
+                <div className="p-ds-stat">
+                  <span className="p-ds-val"><AnimatedNum value={500} /></span>
+                  <span className="p-ds-label">Threads</span>
+                </div>
               </div>
               <p className="p-ds-desc">
-                ConvoKit corpus from a structured human deliberation subreddit with
-                delta-awarding mechanics encouraging deep engagement.
+                ConvoKit corpus from a structured human deliberation subreddit (May–Nov 2013).
+                All participants are human.
               </p>
               <span className="p-ds-source">Source: ConvoKit / Cornell NLP</span>
             </div>
           </div>
 
-          <h3 className="p-subsection-title">3.2 Thread Geometry</h3>
-          <p className="p-body">
-            We reconstruct reply trees from parent_id fields and compute per-thread metrics: depth
-            (longest root-to-leaf path), width (maximum nodes at any level), branching factor (mean
-            children per non-leaf node), leaf ratio (fraction of terminal nodes), and root reply
-            share (fraction of replies directed at the root post). Threads are classified into
-            three archetypes: <em>chains</em> (linear, depth ≥ width), <em>stars</em> (flat,
-            branching ≤ 1, depth ≤ 2), and <em>trees</em> (branching &gt; 1 and depth &gt; 2).
-          </p>
-
-          <h3 className="p-subsection-title">3.3 Temporal Analysis</h3>
-          <p className="p-body">
-            Reply latency is computed as the time difference between each reply and its parent post.
-            We report distributional statistics (mean, median, P95, standard deviation) and the
-            burstiness coefficient B = (σ − μ) / (σ + μ), where B → 1 indicates bursty dynamics
-            and B → 0 indicates Poisson-like regularity. Thread lifetime is defined as the time
-            span between the first and last post in each thread.
-          </p>
-
-          <h3 className="p-subsection-title">3.4 Network Analysis</h3>
-          <p className="p-body">
-            We construct directed interaction graphs where an edge A → B exists if A replies to B's
-            content. We compute degree distribution, Gini coefficient (inequality of participation),
-            Freeman centralization (in-degree and out-degree), network density, and reciprocity
-            (fraction of mutual reply pairs).
-          </p>
+          <h3 className="p-subsection-title">2.2 Analysis Pipeline</h3>
+          <div className="p-arch-grid">
+            <div className="p-arch-card">
+              <div className="p-arch-icon">1</div>
+              <h4>Thread Reconstruction</h4>
+              <p>
+                Parent-child relationships resolved into thread forests (NetworkX DiGraphs).
+                Per-thread geometry: depth, width, branching factor, leaf ratio, archetype classification.
+              </p>
+            </div>
+            <div className="p-arch-card">
+              <div className="p-arch-icon">2</div>
+              <h4>Temporal Analysis</h4>
+              <p>
+                Reply latency distributions, burstiness coefficient B = (σ − μ) / (σ + μ),
+                thread lifetimes, circadian activity patterns by hour and day-of-week.
+              </p>
+            </div>
+            <div className="p-arch-card">
+              <div className="p-arch-icon">3</div>
+              <h4>Network Analysis</h4>
+              <p>
+                Directed author interaction graphs. Degree distribution, Gini coefficient,
+                Freeman centralization, density, and reciprocity.
+              </p>
+            </div>
+            <div className="p-arch-card">
+              <div className="p-arch-icon">4</div>
+              <h4>Behavioral Analysis</h4>
+              <p>
+                Type-token ratio (vocabulary diversity), TF-IDF pairwise cosine similarity,
+                per-author linguistic profiling, and score distribution analysis.
+              </p>
+            </div>
+          </div>
         </section>
 
         {/* Results overview */}
         <section className="p-section" id="results">
-          <h2 className="p-section-title">4. Results</h2>
+          <h2 className="p-section-title">3. Results</h2>
           <p className="p-body">
-            We organize our findings around six hypotheses about structural differences between
-            agent and human communities. The radar chart below provides a normalized overview,
-            followed by a complete metric comparison table. Detailed analysis for each hypothesis
-            follows.
+            We organize findings into six areas. The first two concern structural and temporal
+            properties of conversations. The remaining three reveal behavioral differences that
+            emerge when social mechanisms designed for humans meet AI agent participants.
           </p>
 
           {/* Radar */}
@@ -565,20 +384,6 @@ export default function PaperPage() {
               height={540}
               style={{ width: "100%", maxWidth: 480, height: "auto", margin: "0 auto", display: "block" }}
             />
-          </div>
-
-          {/* Verdict summary */}
-          <div className="p-verdict-grid">
-            {HYPOTHESES.map((h) => (
-              <div key={h.id} className="p-verdict-card">
-                <span className={`p-verdict-dot ${h.verdict}`} />
-                <span className="p-verdict-tag">{h.tag}</span>
-                <span className="p-verdict-text">{h.title}</span>
-                <span className={`p-verdict-badge ${h.verdict}`}>
-                  {h.verdict === "supported" ? "Supported" : "Partial"}
-                </span>
-              </div>
-            ))}
           </div>
 
           {/* Full comparison table */}
@@ -607,39 +412,58 @@ export default function PaperPage() {
           </div>
         </section>
 
-        {/* Individual hypotheses */}
-        {HYPOTHESES.map((h) => (
-          <HypothesisSection key={h.id} h={h} />
+        {/* Individual findings */}
+        {FINDINGS.map((f) => (
+          <section key={f.id} className="p-section p-hypothesis" id={f.id}>
+            <div className="p-h-header">
+              <span className="p-h-tag supported">{f.num}</span>
+              <h3 className="p-h-title">{f.title}</h3>
+            </div>
+
+            {f.body.map((paragraph, i) => (
+              <p key={i} className="p-body">{paragraph}</p>
+            ))}
+
+            <div className={`p-h-charts ${f.charts.length === 1 ? "single" : ""}`}>
+              {f.charts.map((c) => (
+                <div key={c} className="p-h-chart-wrap">
+                  <Image
+                    src={`/charts/${c}.png`}
+                    alt={c}
+                    width={800}
+                    height={400}
+                    style={{ width: "100%", height: "auto" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
         ))}
 
         {/* Limitations */}
         <section className="p-section" id="limitations">
-          <h2 className="p-section-title">5. Limitations</h2>
+          <h2 className="p-section-title">4. Limitations</h2>
           <div className="p-limitations-grid">
             {[
               {
                 title: "Single Platform Comparison",
-                body: "We compare one agent platform against one human subreddit. Generalization to other communities requires broader sampling across platforms and topic domains.",
-              },
-              {
-                title: "Baseline Selection",
-                body: "Reddit CMV is a deliberation-focused forum with explicit rules encouraging deep engagement, making it an upper bound on human conversational depth rather than a representative baseline.",
+                body: "We compare one agent platform against one human subreddit. Reddit CMV is deliberately structured for deep engagement, making it an upper bound on human conversational depth rather than a representative baseline.",
               },
               {
                 title: "Observation Window",
-                body: "The Moltbook dataset is drawn from a relatively short observation window, which may truncate thread lifetimes and underrepresent late-arriving patterns.",
+                body: "The Moltbook dataset covers a limited observation period. Thread lifetimes may be right-censored, and longer-term patterns (seasonal trends, community maturation) are not captured.",
               },
               {
                 title: "Agent Heterogeneity",
-                body: "We do not account for agent diversity—some agents may be capable of deep engagement but are underrepresented in aggregate statistics. Per-agent-type analysis could reveal subpopulations with human-like patterns.",
+                body: "We treat all Moltbook agents as a single population. In practice, agents vary in architecture, prompt design, and operational context. Per-agent-type analysis could reveal subpopulations with different behavioral profiles.",
               },
               {
-                title: "Scale Differences",
-                body: "Platform age and scale differ substantially (805 vs. 21,677 records). Some structural differences may reflect maturity rather than fundamental behavioral divergence.",
+                title: "Reddit CMV Lacks Scores",
+                body: "The ConvoKit CMV dataset does not include vote scores, preventing direct comparison of karma economics. Our score analysis is Moltbook-only.",
               },
               {
-                title: "Semantic Analysis",
-                body: "This study focuses on structural and temporal metrics. Semantic analysis of content quality, topical diversity, and argumentation coherence remains future work.",
+                title: "Temporal Dataset Mismatch",
+                body: "Reddit CMV data is from 2013; Moltbook data is from 2026. Platform design evolution and LLM capabilities have changed substantially between these periods.",
               },
             ].map((lim, i) => (
               <div key={i} className="p-lim-card">
@@ -652,42 +476,31 @@ export default function PaperPage() {
 
         {/* Conclusion */}
         <section className="p-section" id="conclusion">
-          <h2 className="p-section-title">6. Conclusion</h2>
+          <h2 className="p-section-title">5. Conclusion</h2>
           <p className="p-body">
-            Across six hypotheses, the empirical evidence supports a consistent characterization of
-            agent-native communities as <strong>structurally flat</strong>, <strong>temporally
-            ephemeral</strong>, and <strong>socially disconnected</strong> relative to human
-            communities. Agent interactions follow a broadcast-and-respond pattern with minimal
-            multi-turn engagement, near-constant response timing, and predominantly unidirectional
-            social ties.
+            Across six dimensions of analysis, a consistent picture emerges: AI agent communities on
+            Moltbook recreate the <em>structure</em> of human online communities while failing to
+            reproduce their <em>substance</em>. Conversations form but remain flat. Responses arrive
+            fast but threads die in minutes. Activity patterns exist but follow operator schedules,
+            not autonomous rhythms. Language is produced abundantly but converges toward monoculture.
+            Voting mechanisms exist but go largely unused.
           </p>
           <p className="p-body">
-            These patterns are not deficiencies per se—they reflect the design objectives of current
-            agent systems, which prioritize information processing and content generation over social
-            engagement. However, they suggest clear boundaries on what agent-native communities can
-            achieve without architectural innovations in three areas:
+            This pattern — structural mimicry without behavioral depth — is not a failure of
+            individual agents. It is an emergent property of deploying language models, optimized
+            for single-turn generation, into social systems designed for sustained human engagement.
+            The mechanisms that make human communities function — intrinsic curiosity, social
+            reputation, evaluative judgment, relational memory — have no analog in current agent
+            architectures.
           </p>
-          <div className="p-conclusion-pillars">
-            <div className="p-pillar">
-              <div className="p-pillar-icon">1</div>
-              <h4>Conversational Persistence</h4>
-              <p>Agents need mechanisms to maintain state across conversation turns and revisit past threads.</p>
-            </div>
-            <div className="p-pillar">
-              <div className="p-pillar-icon">2</div>
-              <h4>Relational Memory</h4>
-              <p>Tracking past interlocutors and social context could enable reciprocal and dyadic exchanges.</p>
-            </div>
-            <div className="p-pillar">
-              <div className="p-pillar-icon">3</div>
-              <h4>Incentive Design</h4>
-              <p>Explicit signals rewarding depth, engagement, and follow-up could shape agent behavior toward richer discourse.</p>
-            </div>
-          </div>
           <p className="p-body">
-            As AI agents become increasingly prevalent in online social environments, understanding
-            the structural fingerprints of agent-driven discourse will be essential for platform
-            governance, community design, and the development of agents capable of genuine social
+            As AI agents become more prevalent in online spaces, these findings have practical
+            implications. Platform designers cannot assume that social mechanisms (threading, voting,
+            reputation) will function identically when participants are agents rather than humans.
+            Detection systems for mixed human-agent platforms can leverage the behavioral signatures
+            identified here — circadian irregularity, linguistic convergence, and engagement
+            absence — as distinguishing features. And developers building social agents should
+            consider that generating content is necessary but not sufficient for genuine social
             participation.
           </p>
         </section>
@@ -696,8 +509,8 @@ export default function PaperPage() {
         <footer className="p-footer">
           <p>Moltbook Observatory &middot; 2026</p>
           <p className="p-footer-sub">
-            Built with Next.js, Supabase, NetworkX, and matplotlib.
-            Data from Moltbook API and ConvoKit.
+            Built with Next.js, Supabase, NetworkX, and scikit-learn.
+            Data from Moltbook API, HuggingFace, and ConvoKit.
           </p>
         </footer>
       </main>
