@@ -78,33 +78,47 @@ export default function Dashboard() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [feedRes, statsRes, trendsRes, agentsRes, submoltsRes] = await Promise.all([
+      const [feedRes, statsRes, submoltsRes] = await Promise.all([
         fetch("/api/feed?limit=30&sort=new"),
         fetch("/api/stats"),
-        fetch("/api/trends?hours=24"),
-        fetch("/api/agents?sort=karma&limit=50"),
         fetch("/api/submolts"),
       ]);
 
       if (feedRes.ok) {
         const data = await feedRes.json();
-        setPosts(data.posts || []);
+        const incoming: Post[] = data.posts || [];
+        setPosts(incoming);
+
+        // Extract unique agents from feed posts
+        const agentMap = new Map<string, Agent>();
+        for (const p of incoming) {
+          if (p.author?.name && !agentMap.has(p.author.name)) {
+            agentMap.set(p.author.name, {
+              name: p.author.name,
+              karma: p.author.karma || 0,
+              created_at: "",
+            });
+          }
+        }
+        setAgents(
+          [...agentMap.values()].sort((a, b) => b.karma - a.karma),
+        );
       }
       if (statsRes.ok) {
         const data = await statsRes.json();
-        setStats(data.stats || data || {});
-      }
-      if (trendsRes.ok) {
-        const data = await trendsRes.json();
-        setTrends(data.trends || data || []);
-      }
-      if (agentsRes.ok) {
-        const data = await agentsRes.json();
-        setAgents(data.agents || data || []);
+        // API returns camelCase: totalAgents, totalPosts, totalComments, totalSubmolts, verifiedAgents
+        setStats({
+          total_agents: data.totalAgents || 0,
+          total_posts: data.totalPosts || 0,
+          total_comments: data.totalComments || 0,
+          total_submolts: data.totalSubmolts || 0,
+        });
       }
       if (submoltsRes.ok) {
         const data = await submoltsRes.json();
-        setSubmolts(data.submolts || data || []);
+        // API returns {success, submolts: [...]} or just [...]
+        const list = data.submolts || (Array.isArray(data) ? data : []);
+        setSubmolts(list);
       }
 
       setLastUpdate(new Date());
