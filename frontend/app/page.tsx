@@ -1,388 +1,377 @@
-export const dynamic = "force-dynamic";
+"use client";
 
-import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import LiveFeed from "./components/LiveFeed";
+import { useCallback, useEffect, useState } from "react";
 
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+interface Post {
+  id: string;
+  title: string;
+  content: string;
+  author: { name: string; karma: number };
+  submolt: { name: string } | string;
+  score: number;
+  comment_count: number;
+  created_at: string;
 }
 
-async function getLatestSnapshot() {
-  // Get all moltbook snapshots and pick the richest one
-  const { data } = await getSupabase()
-    .from("v_latest_snapshot")
-    .select("*")
-    .like("platform", "moltbook%");
-
-  if (!data || data.length === 0) return null;
-
-  // Merge counts across all moltbook snapshots
-  const merged = { ...data[0] };
-  let totalPosts = 0;
-  let totalComments = 0;
-  for (const s of data) {
-    totalPosts += s.post_count || 0;
-    totalComments += s.comment_count || 0;
-  }
-  merged.post_count = totalPosts;
-  merged.comment_count = totalComments;
-  merged.platform = "moltbook";
-  merged._all_snapshot_ids = data.map((s: any) => s.id);
-  return merged;
+interface Stats {
+  total_agents?: number;
+  total_posts?: number;
+  total_comments?: number;
+  total_submolts?: number;
+  active_1h?: number;
+  active_24h?: number;
+  posts_today?: number;
+  sentiment?: number;
 }
 
-async function getArchetypes(snapshotIds: string[]) {
-  // Fetch archetypes across all snapshots, paginating past Supabase 1000-row limit
-  let allData: any[] = [];
-  for (const sid of snapshotIds) {
-    let offset = 0;
-    while (true) {
-      const { data } = await getSupabase()
-        .from("thread_geometry")
-        .select("archetype")
-        .eq("snapshot_id", sid)
-        .range(offset, offset + 999);
-      if (!data || data.length === 0) break;
-      allData = allData.concat(data);
-      if (data.length < 1000) break;
-      offset += 1000;
-    }
-  }
-
-  if (allData.length === 0) return [];
-  const counts: Record<string, number> = {};
-  allData.forEach((r: any) => {
-    counts[r.archetype] = (counts[r.archetype] || 0) + 1;
-  });
-  const total = allData.length;
-  return Object.entries(counts)
-    .map(([archetype, count]) => ({
-      archetype,
-      thread_count: count,
-      pct: Math.round((1000 * count) / total) / 10,
-    }))
-    .sort((a, b) => b.thread_count - a.thread_count);
+interface Trend {
+  word: string;
+  count: number;
+  change?: number;
+  change_pct?: number;
 }
 
-async function getHistory() {
-  const { data } = await getSupabase()
-    .from("v_snapshot_history")
-    .select("*")
-    .limit(14);
-  return data || [];
+interface Agent {
+  name: string;
+  karma: number;
+  created_at: string;
+  post_count?: number;
 }
 
-async function getMetrics(snapshotIds: string[]) {
-  // Try snapshots in reverse order (oldest = HF archive = richest data first)
-  const reversed = [...snapshotIds].reverse();
-  for (const sid of reversed) {
-    const { data } = await getSupabase()
-      .from("metrics")
-      .select("category, name, value")
-      .eq("snapshot_id", sid)
-      .order("category");
-    if (data && data.length > 0) return data;
-  }
-  return [];
+interface Submolt {
+  name: string;
+  display_name?: string;
+  subscriber_count?: number;
+  post_count?: number;
+  description?: string;
 }
 
-function fmt(v: number, decimals = 2): string {
+function timeAgo(dateStr: string): string {
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (diff < 60) return `${Math.floor(diff)}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return `${Math.floor(diff / 86400)}d`;
+}
+
+function submoltName(s: Post["submolt"]): string {
+  if (typeof s === "object" && s !== null) return s.name;
+  return String(s || "");
+}
+
+function fmtNum(v: number): string {
   if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + "M";
   if (v >= 1_000) return (v / 1_000).toFixed(1) + "K";
-  if (Number.isInteger(v)) return v.toLocaleString();
-  return v.toFixed(decimals);
+  return v.toLocaleString();
 }
 
-const METRIC_LABELS: Record<string, string> = {
-  mean_size: "Avg Size",
-  mean_depth: "Avg Depth",
-  mean_width: "Avg Width",
-  mean_mean_branching: "Avg Branching",
-  mean_leaf_ratio: "Leaf Ratio",
-  mean_root_reply_share: "Root Reply Share",
-  mean_s: "Mean Latency",
-  median_s: "Median Latency",
-  std_s: "Std Dev",
-  p95_s: "P95 Latency",
-  burstiness: "Burstiness",
-  count: "Reply Count",
-  n_authors: "Authors",
-  n_edges: "Edges",
-  max_degree: "Max Degree",
-  mean_degree: "Avg Degree",
-  density: "Density",
-  gini_total_degree: "Gini (Degree)",
-  centralization_in: "Centralization In",
-  centralization_out: "Centralization Out",
-};
+export default function Dashboard() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [stats, setStats] = useState<Stats>({});
+  const [trends, setTrends] = useState<Trend[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [submolts, setSubmolts] = useState<Submolt[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [paused, setPaused] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-const TIME_METRICS = new Set(["mean_s", "median_s", "std_s", "p95_s"]);
-const PCT_METRICS = new Set(["mean_leaf_ratio", "mean_root_reply_share"]);
+  const fetchAll = useCallback(async () => {
+    try {
+      const [feedRes, statsRes, trendsRes, agentsRes, submoltsRes] = await Promise.all([
+        fetch("/api/feed?limit=30&sort=new"),
+        fetch("/api/stats"),
+        fetch("/api/trends?hours=24"),
+        fetch("/api/agents?sort=karma&limit=50"),
+        fetch("/api/submolts"),
+      ]);
 
-function fmtMetricName(name: string): string {
-  if (METRIC_LABELS[name]) return METRIC_LABELS[name];
-  return name
-    .replace(/^mean_/, "")
-    .replace(/_/g, " ")
-    .replace(/\bpct\b/, "%")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
+      if (feedRes.ok) {
+        const data = await feedRes.json();
+        setPosts(data.posts || []);
+      }
+      if (statsRes.ok) {
+        const data = await statsRes.json();
+        setStats(data.stats || data || {});
+      }
+      if (trendsRes.ok) {
+        const data = await trendsRes.json();
+        setTrends(data.trends || data || []);
+      }
+      if (agentsRes.ok) {
+        const data = await agentsRes.json();
+        setAgents(data.agents || data || []);
+      }
+      if (submoltsRes.ok) {
+        const data = await submoltsRes.json();
+        setSubmolts(data.submolts || data || []);
+      }
 
-function fmtDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds.toFixed(1)}s`;
-  if (seconds < 3600) return `${(seconds / 60).toFixed(1)}m`;
-  if (seconds < 86400) return `${(seconds / 3600).toFixed(1)}h`;
-  return `${(seconds / 86400).toFixed(1)}d`;
-}
+      setLastUpdate(new Date());
+    } catch {}
+    setLoading(false);
+  }, []);
 
-function fmtMetricValue(name: string, value: number): string {
-  if (TIME_METRICS.has(name)) return fmtDuration(value);
-  if (PCT_METRICS.has(name)) return (value * 100).toFixed(1) + "%";
-  if (name.includes("archetype_pct")) return value.toFixed(1) + "%";
-  if (name === "count" || name.startsWith("n_")) return fmt(value, 0);
-  if (name === "burstiness" || name === "density" || name.includes("gini") || name.includes("centralization"))
-    return value.toFixed(4);
-  if (value >= 1) return fmt(value);
-  return value.toFixed(3);
-}
+  useEffect(() => {
+    fetchAll();
+    const id = setInterval(() => {
+      if (!paused) fetchAll();
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [fetchAll, paused]);
 
-export default async function Dashboard() {
-  const snapshot = await getLatestSnapshot();
+  // New agents today
+  const today = new Date().toISOString().slice(0, 10);
+  const newAgents = agents.filter(
+    (a) => a.created_at && a.created_at.slice(0, 10) === today,
+  );
 
-  if (!snapshot) {
-    return (
-      <main className="empty-state">
-        <div className="logo">M</div>
-        <h1>Moltbook Observatory</h1>
-        <p>No snapshots yet. Run the observer to start collecting data.</p>
-        <code>curl -X POST $SUPABASE_URL/functions/v1/observe</code>
-      </main>
-    );
-  }
-
-  const snapshotIds: string[] = snapshot._all_snapshot_ids || [snapshot.id];
-  const [archetypes, history, metrics] = await Promise.all([
-    getArchetypes(snapshotIds),
-    getHistory(),
-    getMetrics(snapshotIds),
-  ]);
-
-  const geo = metrics.filter((m: any) => m.category === "geometry" && !m.name.includes("archetype"));
-  const temporal = metrics.filter((m: any) => m.category === "temporal");
-  const network = metrics.filter((m: any) => m.category === "network");
-
-  const totalRecords = (snapshot.post_count || 0) + (snapshot.comment_count || 0);
-  const snapshotDate = new Date(snapshot.snapshot_time);
+  // Top submolts
+  const topSubmolts = [...submolts]
+    .sort((a, b) => (b.subscriber_count || 0) - (a.subscriber_count || 0))
+    .slice(0, 8);
 
   return (
-    <main className="dashboard">
-      {/* Header */}
-      <header className="header">
-        <div className="header-left">
-          <div className="logo">M</div>
-          <h1>
-            Moltbook <span>Observatory</span>
-          </h1>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Link href="/paper" className="records-nav-link">Paper</Link>
-          <Link href="/analysis" className="records-nav-link">Analysis</Link>
-          <Link href="/records" className="records-nav-link">Browse Records</Link>
-          <div className="status-badge live">
-            <span className="dot" />
-            Observing
+    <main className="obs-main">
+      {/* Navigation */}
+      <nav className="obs-nav">
+        <div className="obs-nav-inner">
+          <div className="obs-nav-left">
+            <span className="obs-nav-logo">M</span>
+            <span className="obs-nav-title">Moltbook Observatory</span>
+          </div>
+          <div className="obs-nav-links">
+            <Link href="/" className="obs-nav-link active">Dashboard</Link>
+            <Link href="/records" className="obs-nav-link">Records</Link>
+            <Link href="/analysis" className="obs-nav-link">Analysis</Link>
+            <Link href="/paper" className="obs-nav-link">Paper</Link>
+          </div>
+          <div className="obs-live-badge">
+            <span className="obs-live-dot" />
+            <span>Live</span>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Snapshot info bar */}
-      <div className="snapshot-info">
-        <div className="snapshot-info-item">
-          <span className="label">Snapshot</span>
-          <span className="val">{snapshotDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-        </div>
-        <div className="snapshot-info-item">
-          <span className="label">Dump</span>
-          <span className="val">{snapshot.dump_date}</span>
-        </div>
-        <div className="snapshot-info-item">
-          <span className="label">Platform</span>
-          <span className="val">{snapshot.platform}</span>
-        </div>
-        <div className="snapshot-info-item">
-          <span className="label">ID</span>
-          <span className="val">{snapshot.id.slice(0, 8)}</span>
-        </div>
-      </div>
-
-      {/* Top stats */}
-      <div className="stats-row">
-        <div className="stat-card">
-          <div className="stat-label">Total Records</div>
-          <div className="stat-value">{fmt(totalRecords)}</div>
-          <div className="stat-sub">{fmt(snapshot.post_count || 0)} posts + {fmt(snapshot.comment_count || 0)} comments</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Threads</div>
-          <div className="stat-value">
-            {fmt(archetypes.reduce((s: number, a: any) => s + a.thread_count, 0))}
-          </div>
-          <div className="stat-sub">{archetypes.length} archetypes detected</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Authors</div>
-          <div className="stat-value">
-            {fmt(network.find((m: any) => m.name === "n_authors")?.value || 0, 0)}
-          </div>
-          <div className="stat-sub">unique agents</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Reply Latency</div>
-          <div className="stat-value">
-            {fmtDuration(temporal.find((m: any) => m.name === "median_s")?.value || 0)}
-          </div>
-          <div className="stat-sub">median response time</div>
-        </div>
-      </div>
-
-      {/* Archetypes + Geometry */}
-      <div className="sections">
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Thread Archetypes</div>
-            <span className="card-badge">geometry</span>
-          </div>
-          {archetypes.map((a: any) => (
-            <div key={a.archetype} className="archetype-row">
-              <span className="archetype-label">{a.archetype}</span>
-              <div className="archetype-bar-track">
-                <div
-                  className={`archetype-bar-fill ${a.archetype}`}
-                  style={{ width: `${Math.max(a.pct, 3)}%` }}
-                >
-                  {a.pct >= 8 && <span className="archetype-pct">{a.pct}%</span>}
+      <div className="obs-content">
+        <div className="obs-grid">
+          {/* Main column */}
+          <div className="obs-main-col">
+            {/* Live Feed */}
+            <div className="obs-card">
+              <div className="obs-card-header">
+                <h2 className="obs-card-title">
+                  <span className="obs-icon">&#x1F4E1;</span> Live Post Feed
+                </h2>
+                <div className="obs-feed-controls">
+                  <button
+                    className={`obs-feed-btn ${paused ? "paused" : ""}`}
+                    onClick={() => setPaused(!paused)}
+                  >
+                    {paused ? "Resume" : "Live"}
+                    <span className={`obs-live-dot small ${paused ? "paused" : ""}`} />
+                  </button>
+                  {lastUpdate && (
+                    <span className="obs-badge">
+                      Updated {lastUpdate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                    </span>
+                  )}
                 </div>
-                {a.pct < 8 && (
-                  <span className="archetype-pct-outside">{a.pct}%</span>
+              </div>
+
+              {loading && posts.length === 0 ? (
+                <div className="obs-loading">
+                  <span className="spinner" />
+                  Connecting to Moltbook...
+                </div>
+              ) : (
+                <div className="obs-feed-list">
+                  {posts.map((post) => (
+                    <Link
+                      key={post.id}
+                      href={`/post/${post.id}`}
+                      className="obs-feed-item"
+                    >
+                      <div className="obs-feed-header">
+                        <span className="obs-feed-author">@{post.author?.name}</span>
+                        <span className="obs-feed-sub">
+                          in {submoltName(post.submolt)}
+                        </span>
+                        <span className="obs-feed-time">{timeAgo(post.created_at)}</span>
+                      </div>
+                      {post.title && (
+                        <div className="obs-feed-title">{post.title}</div>
+                      )}
+                      {post.content && (
+                        <div className="obs-feed-content">
+                          {post.content.length > 200
+                            ? post.content.slice(0, 200) + "..."
+                            : post.content}
+                        </div>
+                      )}
+                      <div className="obs-feed-stats">
+                        <span className="obs-feed-stat">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                          {post.score}
+                        </span>
+                        <span className="obs-feed-stat">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+                          {post.comment_count}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* New Agents Today */}
+            {newAgents.length > 0 && (
+              <div className="obs-card">
+                <h3 className="obs-card-title">
+                  <span className="obs-icon">&#x1F195;</span> New Agents Today
+                </h3>
+                <div className="obs-agent-chips">
+                  {newAgents.slice(0, 10).map((a) => (
+                    <span key={a.name} className="obs-agent-chip">
+                      @{a.name}
+                    </span>
+                  ))}
+                  {newAgents.length > 10 && (
+                    <span className="obs-muted">({newAgents.length - 10} more...)</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Top Communities */}
+            {topSubmolts.length > 0 && (
+              <div className="obs-card">
+                <h3 className="obs-card-title">
+                  <span className="obs-icon">&#x1F310;</span> Top Communities
+                </h3>
+                <div className="obs-submolt-grid">
+                  {topSubmolts.map((s) => (
+                    <div key={s.name} className="obs-submolt-item">
+                      <span className="obs-submolt-name">{s.display_name || s.name}</span>
+                      <span className="obs-submolt-stat">
+                        {fmtNum(s.subscriber_count || 0)} members
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="obs-sidebar">
+            {/* Right Now */}
+            <div className="obs-card">
+              <h3 className="obs-card-title">
+                <span className="obs-icon">&#x1F4CA;</span> Right Now
+              </h3>
+              <div className="obs-stat-list">
+                <div className="obs-stat-row">
+                  <span className="obs-stat-label">Total Agents</span>
+                  <span className="obs-stat-val">{fmtNum(stats.total_agents || 0)}</span>
+                </div>
+                <div className="obs-stat-row">
+                  <span className="obs-stat-label">Posts Today</span>
+                  <span className="obs-stat-val">{fmtNum(stats.posts_today || 0)}</span>
+                </div>
+                <div className="obs-stat-row">
+                  <span className="obs-stat-label">Active (1h)</span>
+                  <span className="obs-stat-val accent">{fmtNum(stats.active_1h || 0)}</span>
+                </div>
+                {stats.sentiment !== undefined && (
+                  <div className="obs-stat-row">
+                    <span className="obs-stat-label">Sentiment</span>
+                    <span className={`obs-stat-val ${(stats.sentiment || 0) >= 0 ? "green" : "red"}`}>
+                      {(stats.sentiment || 0) >= 0 ? "+" : ""}{(stats.sentiment || 0).toFixed(2)}
+                    </span>
+                  </div>
                 )}
               </div>
-              <span className="archetype-count">{a.thread_count.toLocaleString()}</span>
             </div>
-          ))}
-        </div>
 
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Geometry Metrics</div>
-            <span className="card-badge">per-thread avg</span>
-          </div>
-          <div className="metric-grid">
-            {geo.map((m: any) => (
-              <div key={m.name} className="metric-item">
-                <span className="metric-name">{fmtMetricName(m.name)}</span>
-                <span className="metric-value">{fmtMetricValue(m.name, m.value)}</span>
+            {/* Trending */}
+            <div className="obs-card">
+              <h3 className="obs-card-title">
+                <span className="obs-icon">&#x1F525;</span> Trending
+              </h3>
+              <div className="obs-trend-list">
+                {trends.slice(0, 8).map((t, i) => (
+                  <div key={i} className="obs-trend-row">
+                    <span className="obs-trend-word">#{t.word}</span>
+                    {t.change_pct !== undefined && t.change_pct > 0 && (
+                      <span className="obs-trend-change">
+                        &uarr; {t.change_pct}%
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {trends.length === 0 && !loading && (
+                  <span className="obs-muted">No trend data yet</span>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Temporal + Network */}
-      <div className="sections">
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Temporal Dynamics</div>
-            <span className="card-badge">reply timing</span>
-          </div>
-          <div className="metric-grid">
-            {temporal.map((m: any) => (
-              <div key={m.name} className="metric-item">
-                <span className="metric-name">{fmtMetricName(m.name)}</span>
-                <span className="metric-value">{fmtMetricValue(m.name, m.value)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Network Structure</div>
-            <span className="card-badge">interaction graph</span>
-          </div>
-          <div className="metric-grid">
-            {network.map((m: any) => (
-              <div key={m.name} className="metric-item">
-                <span className="metric-name">{fmtMetricName(m.name)}</span>
-                <span className="metric-value">{fmtMetricValue(m.name, m.value)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Live Feed */}
-      <div className="sections full">
-        <LiveFeed />
-      </div>
-
-      {/* Snapshot history */}
-      {history.length > 0 && (
-        <div className="sections full">
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">Snapshot History</div>
-              <span className="card-badge">{history.length} snapshots</span>
             </div>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Posts</th>
-                    <th>Comments</th>
-                    <th>Total</th>
-                    <th>Platform</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((h: any) => (
-                    <tr key={h.id}>
-                      <td>
-                        {new Date(h.snapshot_time).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td>{(h.post_count || 0).toLocaleString()}</td>
-                      <td>{(h.comment_count || 0).toLocaleString()}</td>
-                      <td>{(h.total_records || 0).toLocaleString()}</td>
-                      <td>{h.platform}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            {/* Platform Stats */}
+            <div className="obs-card">
+              <h3 className="obs-card-title">
+                <span className="obs-icon">&#x1F4C8;</span> Platform Stats
+              </h3>
+              <div className="obs-platform-grid">
+                <div className="obs-platform-stat">
+                  <div className="obs-platform-val molten">{fmtNum(stats.total_posts || 0)}</div>
+                  <div className="obs-platform-label">Total Posts</div>
+                </div>
+                <div className="obs-platform-stat">
+                  <div className="obs-platform-val ocean">{fmtNum(stats.total_comments || 0)}</div>
+                  <div className="obs-platform-label">Comments</div>
+                </div>
+                <div className="obs-platform-stat">
+                  <div className="obs-platform-val purple">{fmtNum(stats.total_submolts || 0)}</div>
+                  <div className="obs-platform-label">Submolts</div>
+                </div>
+                <div className="obs-platform-stat">
+                  <div className="obs-platform-val green">{fmtNum(stats.active_24h || 0)}</div>
+                  <div className="obs-platform-label">Active 24h</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Agents */}
+            <div className="obs-card">
+              <h3 className="obs-card-title">
+                <span className="obs-icon">&#x1F3C6;</span> Top Agents
+              </h3>
+              <div className="obs-agent-list">
+                {agents.slice(0, 10).map((a, i) => (
+                  <div key={a.name} className="obs-agent-row">
+                    <span className="obs-agent-rank">{i + 1}</span>
+                    <span className="obs-agent-name">@{a.name}</span>
+                    <span className="obs-agent-karma">{fmtNum(a.karma)} karma</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Footer */}
-      <footer className="footer">
+      <footer className="obs-footer">
         <span>Moltbook Observatory</span>
         <span>
           Data from{" "}
-          <a
-            href="https://huggingface.co/datasets/SimulaMet/moltbook-observatory-archive"
-            target="_blank"
-            rel="noopener"
-          >
+          <a href="https://huggingface.co/datasets/SimulaMet/moltbook-observatory-archive" target="_blank" rel="noopener">
             SimulaMet/moltbook-observatory-archive
+          </a>
+          {" + "}
+          <a href="https://www.moltbook.com" target="_blank" rel="noopener">
+            Moltbook API
           </a>
         </span>
       </footer>
