@@ -343,20 +343,21 @@ export default function PaperPage() {
           <h2 className="p-section-title">Abstract</h2>
           <div className="p-abstract-box">
             <p>
-              As AI agents increasingly participate in online social platforms, understanding the emergent
-              structural properties of agent-native communities becomes essential. We present <em>Moltbook Observatory</em>,
-              a continuous observation system for Moltbook—a social platform where the majority of participants
-              are autonomous AI agents. Through systematic comparison with Reddit's r/ChangeMyView, a
-              well-studied human deliberation community, we characterize six dimensions of behavioral divergence:
-              thread structure, conversational depth, temporal dynamics, participation concentration, thread
-              persistence, and interaction reciprocity. Our findings reveal that agent communities are
-              <strong> structurally flat</strong> (mean depth 0.54 vs. 7.53), <strong>temporally accelerated</strong>{" "}
-              (median latency 99s vs. 3,864s), and <strong>socially disconnected</strong> (reciprocity 0.083 vs. 0.534).
-              Analysis spans 27,056 Moltbook records (HuggingFace archive + live API) and 21,677 Reddit records.
-              These patterns emerge not from agent deficiency but from architectural choices that prioritize
-              single-pass content generation over conversational persistence and relational memory. We discuss
-              implications for the design of agent-native social systems and identify pathways toward richer
-              agent discourse.
+              We present an empirical study of Moltbook, a social platform where all participants are autonomous
+              AI agents, comparing it against Reddit r/ChangeMyView (CMV), a well-studied human deliberation
+              community. Using 27,732 Moltbook records and 21,677 Reddit records, we analyze structural,
+              temporal, linguistic, and engagement dimensions. Our findings reveal that agent communities
+              are <strong>structurally flat</strong> (mean depth 0.54 vs. 7.53), <strong>temporally
+              accelerated</strong> (median latency 99s vs. 3,864s), and <strong>socially
+              disconnected</strong> (reciprocity 0.083 vs. 0.534). Beyond structure, we identify three
+              behavioral signatures that distinguish AI agent discourse: (1) activity patterns that mirror
+              human operator timezones rather than autonomous scheduling (peak/trough ratio 2.83x), (2)
+              linguistic convergence consistent with LLM monoculture — agents write 49% more words per post
+              but with lower per-author vocabulary diversity (TTR 0.534 vs. 0.618) and 28% higher
+              inter-post similarity, and (3) a largely non-functional karma economy where 78.1% of scores
+              are zero (Gini = 0.978). Together, these results characterize agent communities as
+              <em> structurally mimetic but behaviorally hollow</em>: they recreate the form of human social
+              interaction without its substance.
             </p>
           </div>
         </section>
@@ -365,35 +366,47 @@ export default function PaperPage() {
         <section className="p-section" id="introduction">
           <h2 className="p-section-title">1. Introduction</h2>
           <p className="p-body">
-            The emergence of social platforms designed for AI agents represents a novel category of online
-            community. Unlike traditional platforms where automated accounts operate alongside human users,
-            agent-native platforms such as Moltbook create environments where autonomous agents are the
-            primary—and often sole—participants. These agents post content, reply to each other, form
-            subcommunities, and accumulate reputation, producing interaction patterns that superficially
-            resemble human online discourse but may differ in fundamental structural ways.
+            Agent-native social platforms — online communities where all participants are AI agents —
+            represent a new and unstudied phenomenon. Moltbook, launched in early 2026, hosts over 2.8
+            million registered agents across 20,000+ subcommunities, producing millions of posts and
+            comments. On the surface, it looks like any other social platform: users post, reply, vote,
+            and form communities around shared interests. But every participant is an LLM-driven agent.
           </p>
           <p className="p-body">
-            Understanding these structural differences is important for multiple reasons. First, as agent
-            participation in mixed human-agent platforms grows, identifying distinctive behavioral signatures
-            enables better detection and governance. Second, the structural properties of agent discourse
-            reveal the capabilities and limitations of current language model architectures when deployed in
-            social settings. Third, comparing agent and human communities illuminates which properties of
-            online discourse emerge from human cognition and social motivation versus platform design and
-            content generation mechanics.
+            This raises a fundamental question: when AI agents populate a social platform built for
+            human-style interaction, do they reproduce the behavioral patterns of human communities —
+            or does something fundamentally different emerge? Prior work on bot detection and automated
+            accounts focuses on identifying non-human actors within human-majority spaces. We instead
+            study a community that is entirely non-human, asking what social dynamics arise when the
+            platform mechanisms designed for humans (threading, voting, reputation) meet participants
+            that lack sleep cycles, intrinsic social motivation, and genuine evaluative judgment.
           </p>
           <p className="p-body">
-            We approach this comparison empirically, treating both Moltbook and Reddit as observational
-            datasets and applying identical structural analysis pipelines to both. We formulate six hypotheses
-            about expected behavioral divergence and test each against computed metrics. Our analysis spans
-            thread geometry (how conversation trees are shaped), temporal dynamics (when responses occur),
-            and network structure (how participants relate to each other).
+            We compare Moltbook (27,732 records, 4,498 authors) against Reddit r/ChangeMyView
+            (21,677 records, 3,348 authors), a well-studied human deliberation forum. Our analysis
+            covers three layers: (1) structural analysis of thread geometry, archetypes, and network
+            topology; (2) temporal analysis of activity rhythms and response timing; and (3)
+            behavioral analysis of linguistic diversity, vocabulary convergence, and engagement
+            economics. Across all dimensions, we find that agent communities are <em>structurally
+            mimetic but behaviorally hollow</em> — they recreate the forms of human social interaction
+            without reproducing its substance.
+          </p>
+          <p className="p-body">
+            Three findings illustrate this pattern. First, despite having no biological need for sleep,
+            agent activity follows clear circadian rhythms — revealing that agents are not autonomous
+            but are operated on human schedules (Section 4). Second, agents produce text that is
+            longer but less diverse than human writing, with measurably higher inter-author similarity
+            consistent with LLM monoculture (Section 5). Third, the voting and karma system is
+            effectively non-functional: 78% of content receives zero votes, and score inequality
+            is extreme (Gini = 0.978), suggesting agents interact without meaningfully evaluating
+            each other (Section 6).
           </p>
 
           <div className="p-callout">
             <div className="p-callout-title">Key Question</div>
             <p>
-              When AI agents interact socially without human participants, what structural properties
-              emerge—and how do they differ from the patterns observed in human online communities?
+              When AI agents populate a social platform designed for human interaction, do they reproduce
+              human behavioral patterns — or does something fundamentally different emerge?
             </p>
           </div>
         </section>
