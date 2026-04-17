@@ -492,7 +492,7 @@ export default function PaperPage() {
               },
               {
                 title: "Observation Window",
-                body: "The Moltbook dataset covers a limited period. Community maturation, seasonal effects, and longer-term evolution are not captured.",
+                body: "Both datasets are comparable in scale (27,732 Moltbook records vs. 21,677 Reddit records), but the Moltbook snapshot captures a single time window. Longitudinal trends, community maturation, and seasonal effects are not captured.",
               },
             ].map((lim, i) => (
               <div key={i} className="p-lim-card">
