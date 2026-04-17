@@ -195,45 +195,47 @@ export default async function AnalysisPage() {
           />
         </div>
 
-        {/* Metric sections */}
-        {sections.map((sec) => (
-          <div key={sec.title} className="obs-card" style={{ marginTop: "1.5rem" }}>
-            <div className="obs-card-header">
-              <h2 className="obs-card-title">{sec.title}</h2>
-              <span className="obs-badge">{sec.badge}</span>
-            </div>
-            <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
-              {sec.description}
-            </p>
+        {/* Metric sections — two column */}
+        <div className="analysis-two-col">
+          {sections.map((sec) => (
+            <div key={sec.title} className="obs-card">
+              <div className="obs-card-header">
+                <h2 className="obs-card-title">{sec.title}</h2>
+                <span className="obs-badge">{sec.badge}</span>
+              </div>
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+                {sec.description}
+              </p>
 
-            {/* Metrics grid */}
-            <div className="analysis-metric-grid">
-              {sec.metrics.map((mt) => (
-                <div key={mt.name} className="analysis-metric-cell">
-                  <span className="analysis-metric-name">{mt.name}</span>
-                  <span className="analysis-metric-value">{mt.value}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Charts */}
-            {sec.charts.length > 0 && (
-              <div className={`analysis-chart-row ${sec.charts.length === 1 ? "single" : ""}`}>
-                {sec.charts.map((c) => (
-                  <div key={c} className="analysis-chart-item">
-                    <Image
-                      src={`/charts/${c}.png`}
-                      alt={c}
-                      width={800}
-                      height={400}
-                      style={{ width: "100%", height: "auto", borderRadius: "8px" }}
-                    />
+              {/* Metrics grid */}
+              <div className="analysis-metric-grid">
+                {sec.metrics.map((mt) => (
+                  <div key={mt.name} className="analysis-metric-cell">
+                    <span className="analysis-metric-name">{mt.name}</span>
+                    <span className="analysis-metric-value">{mt.value}</span>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Charts */}
+              {sec.charts.length > 0 && (
+                <div className="analysis-chart-stack">
+                  {sec.charts.map((c) => (
+                    <div key={c} className="analysis-chart-item">
+                      <Image
+                        src={`/charts/${c}.png`}
+                        alt={c}
+                        width={800}
+                        height={400}
+                        style={{ width: "100%", height: "auto", borderRadius: "8px" }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
 
         {/* Thread lifetime chart */}
         <div className="obs-card" style={{ marginTop: "1.5rem" }}>
