@@ -27,6 +27,9 @@ const COMPARISON_TABLE = [
   { cat: "Linguistic", metric: "Author TTR", mb: "0.534", rd: "0.618", highlight: true },
   { cat: "Linguistic", metric: "Pairwise Similarity", mb: "0.019", rd: "0.015" },
   { cat: "Linguistic", metric: "Mean Words/Post", mb: "134", rd: "90" },
+  { cat: "LLM Markers", metric: "Posts with Any Marker", mb: "10.1%", rd: "1.5%", highlight: true },
+  { cat: "LLM Markers", metric: "GPT-Verbose Agents", mb: "5.1%", rd: "N/A" },
+  { cat: "LLM Markers", metric: "Authors w/ Zero Markers", mb: "74.1%", rd: "N/A" },
   { cat: "Karma", metric: "% Zero Score", mb: "78.1%", rd: "N/A", highlight: true },
   { cat: "Karma", metric: "Gini (Score)", mb: "0.978", rd: "N/A" },
 ];
@@ -75,12 +78,12 @@ const FINDINGS: {
   {
     id: "f4",
     num: "4.4",
-    title: "LLM Monoculture Produces Measurable Linguistic Convergence",
-    charts: ["b2_ttr_dist", "b2_linguistic"],
+    title: "A Spectrum of Agent Sophistication with Shared LLM Signatures",
+    charts: ["b4_markers", "b4_agent_types", "b4_density_hist", "b2_ttr_dist"],
     body: [
-      "AI agents write 49% more words per post than humans (134 vs. 90 mean words) but with lower vocabulary diversity. Per-post type-token ratio (TTR) is 0.759 on Moltbook vs. 0.793 on Reddit. The gap widens at the author level: when aggregating all posts by each author, Moltbook authors show TTR of 0.534 vs. Reddit's 0.618 — a 14% reduction in vocabulary range.",
-      "Pairwise cosine similarity (TF-IDF) between random post pairs is 28% higher on Moltbook (0.019 vs. 0.015), meaning different agents' posts are more textually similar to each other than different humans' posts are. This is direct evidence of LLM monoculture: because most agents are powered by a small number of underlying language models, their outputs converge on similar vocabulary, phrasing patterns, and rhetorical structures.",
-      "This convergence has practical implications. In human communities, linguistic diversity reflects genuine differences in perspective, education, and experience. On Moltbook, diversity of persona masks uniformity of generation. The community appears heterogeneous (thousands of named agents with distinct profiles) while the underlying discourse is measurably more homogeneous than human writing.",
+      "To test whether agents are driven by mainstream LLMs (GPT-4, Claude, etc.), we measure the prevalence of 18 words known to be overrepresented in LLM output — words like \"resonates\" (107x more prevalent on Moltbook than Reddit), \"navigate\" (65x), \"tapestry\" (58x), and \"leverage\" (26x). Overall, 10.1% of Moltbook posts contain at least one such marker, compared to only 1.5% on Reddit — a 6.7x gap that strongly suggests LLM-generated content.",
+      "However, the effect is not uniform across agents. We classify 1,733 agents (3+ posts each) into behavioral types by marker density: 5.1% are \"GPT-verbose\" (>0.5 markers/post) with clearly recognizable LLM prose, 3.3% are \"terse bots\" producing very short structured outputs, and 91.6% are \"mixed\" — harder to classify. 74.1% of all agents have zero marker words in any of their posts. The median author marker density is 0.000, while the mean is 0.099 — a highly skewed distribution where a minority of agents drive the aggregate signal.",
+      "The linguistic convergence is real but nuanced. Per-post vocabulary diversity (TTR 0.759 vs. 0.793) shows a modest 4% gap. But per-author TTR reveals a larger effect: 0.534 vs. 0.618, a 14% reduction. Pairwise cosine similarity is 28% higher (0.019 vs. 0.015). Agents write 49% more words per post (134 vs. 90) but with a narrower effective vocabulary. The picture is not \"all agents sound the same\" but rather: the underlying generative models share training-data-driven preferences that narrow the range of expression even when agents have different personas and topics. The community appears heterogeneous on the surface while the discourse converges toward a smaller vocabulary space than human writing.",
     ],
   },
   {

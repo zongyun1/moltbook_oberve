@@ -250,3 +250,77 @@ def plot_score_distribution(moltbook_scores: pd.Series, reddit_scores: pd.Series
     fig.suptitle("Karma Economy — Score Distributions", fontsize=14)
     fig.tight_layout()
     _savefig(fig, f"{out_dir}/b3_scores.png")
+
+
+def plot_marker_prevalence(moltbook_prev: dict[str, float], reddit_prev: dict[str, float],
+                            out_dir: str = "pipeline/outputs/plots"):
+    """Bar chart comparing LLM marker word prevalence between platforms."""
+    # Sort by Moltbook prevalence, take top 12
+    markers = sorted(moltbook_prev.keys(), key=lambda m: -moltbook_prev[m])[:12]
+    mb_vals = [moltbook_prev[m] * 100 for m in markers]
+    rd_vals = [reddit_prev.get(m, 0) * 100 for m in markers]
+
+    x = np.arange(len(markers))
+    width = 0.35
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    ax.barh(x - width / 2, mb_vals, width, label="Moltbook", color="#f97316", alpha=0.8)
+    ax.barh(x + width / 2, rd_vals, width, label="Reddit CMV", color="#3b82f6", alpha=0.8)
+
+    ax.set_yticks(x)
+    ax.set_yticklabels(markers, fontsize=10)
+    ax.set_xlabel("% of Posts Containing Word")
+    ax.set_title("LLM Signature Words — Prevalence Comparison")
+    ax.legend()
+    ax.grid(True, axis="x", alpha=0.3)
+    ax.invert_yaxis()
+    fig.tight_layout()
+    _savefig(fig, f"{out_dir}/b4_markers.png")
+
+
+def plot_agent_types(type_data: dict, out_dir: str = "pipeline/outputs/plots"):
+    """Pie chart of agent type classification."""
+    types = type_data.get("types", {})
+    if not types:
+        return
+
+    labels = []
+    sizes = []
+    colors = {"gpt_verbose": "#ef4444", "terse_bot": "#8b5cf6", "mixed": "#6b7280"}
+    color_list = []
+    for t, info in sorted(types.items(), key=lambda x: -x[1]["count"]):
+        nice_name = {"gpt_verbose": "GPT-Verbose", "terse_bot": "Terse Bot", "mixed": "Mixed/Other"}
+        labels.append(f"{nice_name.get(t, t)} ({info['count']})")
+        sizes.append(info["count"])
+        color_list.append(colors.get(t, "#94a3b8"))
+
+    fig, ax = plt.subplots(figsize=(7, 7))
+    wedges, texts, autotexts = ax.pie(
+        sizes, labels=labels, autopct="%1.1f%%", startangle=140,
+        colors=color_list, textprops={"fontsize": 11}
+    )
+    for t in autotexts:
+        t.set_fontsize(10)
+    ax.set_title(f"Agent Type Classification (n={type_data.get('n_agents', '?')} agents)")
+    fig.tight_layout()
+    _savefig(fig, f"{out_dir}/b4_agent_types.png")
+
+
+def plot_marker_density_hist(author_density_df, out_dir: str = "pipeline/outputs/plots"):
+    """Histogram of per-author LLM marker density."""
+    densities = author_density_df["marker_density"]
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.hist(densities, bins=50, color="#f97316", alpha=0.8, edgecolor="black")
+    ax.axvline(densities.mean(), color="red", linestyle="--", linewidth=1.5,
+               label=f"Mean = {densities.mean():.3f}")
+    ax.axvline(densities.median(), color="white", linestyle="--", linewidth=1.5,
+               label=f"Median = {densities.median():.3f}")
+
+    ax.set_xlabel("LLM Marker Density (markers per post)")
+    ax.set_ylabel("Number of Authors")
+    ax.set_title("Per-Author LLM Marker Density Distribution")
+    ax.legend()
+    ax.grid(True, axis="y", alpha=0.3)
+    fig.tight_layout()
+    _savefig(fig, f"{out_dir}/b4_density_hist.png")

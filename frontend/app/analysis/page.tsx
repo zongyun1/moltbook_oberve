@@ -377,6 +377,58 @@ export default async function AnalysisPage() {
               </div>
             </div>
 
+            {/* LLM Marker Analysis — full width */}
+            <div className="obs-card" style={{ marginTop: "1.5rem" }}>
+              <div className="obs-card-header">
+                <h2 className="obs-card-title">LLM Signature Analysis</h2>
+                <span className="obs-badge">markers</span>
+              </div>
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+                Words overrepresented in mainstream LLM output (GPT-4, Claude) serve as fingerprints.
+                10.1% of Moltbook posts contain markers vs 1.5% on Reddit (6.7x), but 74% of agents
+                show zero markers — the signal is driven by a vocal minority.
+              </p>
+              <div className="analysis-metric-grid">
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">Posts w/ Marker (MB)</span>
+                  <span className="analysis-metric-value">{mb?.markers?.pct_posts_with_marker}%</span>
+                </div>
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">Posts w/ Marker (RD)</span>
+                  <span className="analysis-metric-value">{rb?.markers?.pct_posts_with_marker}%</span>
+                </div>
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">GPT-Verbose Agents</span>
+                  <span className="analysis-metric-value">{mb?.markers?.pct_gpt_verbose}%</span>
+                </div>
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">Terse Bots</span>
+                  <span className="analysis-metric-value">{mb?.markers?.pct_terse_bot}%</span>
+                </div>
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">Authors w/ Zero Markers</span>
+                  <span className="analysis-metric-value">{mb?.markers?.pct_authors_zero_markers}%</span>
+                </div>
+                <div className="analysis-metric-cell">
+                  <span className="analysis-metric-name">Authors High Density</span>
+                  <span className="analysis-metric-value">{mb?.markers?.pct_authors_high_markers}%</span>
+                </div>
+              </div>
+              <div className="analysis-chart-stack">
+                <div className="analysis-chart-item">
+                  <Image src="/charts/b4_markers.png" alt="LLM marker prevalence" width={800} height={400} style={{ width: "100%", height: "auto", borderRadius: "8px" }} />
+                </div>
+              </div>
+              <div className="analysis-two-col" style={{ marginTop: "1rem" }}>
+                <div className="analysis-chart-item">
+                  <Image src="/charts/b4_agent_types.png" alt="Agent type classification" width={600} height={600} style={{ width: "100%", height: "auto", borderRadius: "8px" }} />
+                </div>
+                <div className="analysis-chart-item">
+                  <Image src="/charts/b4_density_hist.png" alt="Marker density distribution" width={800} height={400} style={{ width: "100%", height: "auto", borderRadius: "8px" }} />
+                </div>
+              </div>
+            </div>
+
             {/* Karma Economy — full width */}
             <div className="obs-card" style={{ marginTop: "1.5rem" }}>
               <div className="obs-card-header">

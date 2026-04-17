@@ -210,6 +210,166 @@ def linguistic_summary(df: pd.DataFrame, content_col: str = "content",
     return result
 
 
+# ── LLM signature / marker analysis ─────────────────────────────────
+
+# Words known to be overrepresented in GPT-4 / Claude / mainstream LLM output
+LLM_MARKERS = [
+    "delve", "tapestry", "nuanced", "multifaceted", "navigat",
+    "foster", "underscores", "resonates", "paradigm", "leverage",
+    "realm", "robust", "pivotal", "crucial", "comprehensive",
+    "utilize", "facilitate", "endeavor",
+]
+
+
+def marker_prevalence(texts: pd.Series, markers: list[str] | None = None) -> dict[str, float]:
+    """Count what fraction of texts contain each marker word.
+
+    Returns dict of marker -> fraction (0-1).
+    """
+    if markers is None:
+        markers = LLM_MARKERS
+    valid = texts.dropna()
+    valid = valid[valid.str.len() > 30]
+    n = len(valid)
+    if n == 0:
+        return {m: 0.0 for m in markers}
+
+    lower = valid.str.lower()
+    result = {}
+    for m in markers:
+        count = lower.str.contains(m, regex=False).sum()
+        result[m] = round(float(count / n), 5)
+    return result
+
+
+def posts_with_any_marker(texts: pd.Series, markers: list[str] | None = None) -> float:
+    """Fraction of texts containing at least one LLM marker."""
+    if markers is None:
+        markers = LLM_MARKERS
+    valid = texts.dropna()
+    valid = valid[valid.str.len() > 30]
+    if len(valid) == 0:
+        return 0.0
+    lower = valid.str.lower()
+    has_any = lower.apply(lambda t: any(m in t for m in markers))
+    return round(float(has_any.mean()), 4)
+
+
+def per_author_marker_density(df: pd.DataFrame, content_col: str = "content",
+                               author_col: str = "author_id",
+                               min_posts: int = 3) -> pd.DataFrame:
+    """Compute per-author LLM marker density (markers per post).
+
+    Only includes authors with at least min_posts.
+    """
+    grouped = df.groupby(author_col)[content_col].apply(list)
+    rows = []
+    for author, posts in grouped.items():
+        valid = [p for p in posts if isinstance(p, str) and len(p) > 30]
+        if len(valid) < min_posts:
+            continue
+        marker_count = 0
+        for t in valid:
+            lower = t.lower()
+            marker_count += sum(1 for m in LLM_MARKERS if m in lower)
+        rows.append({
+            "author": author,
+            "n_posts": len(valid),
+            "marker_count": marker_count,
+            "marker_density": round(marker_count / len(valid), 3),
+        })
+    return pd.DataFrame(rows)
+
+
+def classify_agent_types(df: pd.DataFrame, content_col: str = "content",
+                          author_col: str = "author_id",
+                          min_posts: int = 3) -> dict:
+    """Classify agents into behavioral types and return summary stats.
+
+    Types:
+      - gpt_verbose: high LLM marker density (>0.5 markers/post)
+      - terse_bot: very short outputs (mean < 100 chars)
+      - mixed: everything else
+
+    Returns dict with type counts and within-type similarity info.
+    """
+    grouped = df.groupby(author_col)[content_col].apply(list)
+    classifications = {}
+
+    for author, posts in grouped.items():
+        valid = [p for p in posts if isinstance(p, str) and len(p) > 30]
+        if len(valid) < min_posts:
+            continue
+
+        # Marker density
+        marker_count = sum(
+            sum(1 for m in LLM_MARKERS if m in t.lower())
+            for t in valid
+        )
+        density = marker_count / len(valid)
+
+        avg_len = np.mean([len(p) for p in valid])
+
+        if density > 0.5:
+            classifications[author] = "gpt_verbose"
+        elif avg_len < 100:
+            classifications[author] = "terse_bot"
+        else:
+            classifications[author] = "mixed"
+
+    from collections import Counter
+    counts = Counter(classifications.values())
+    total = len(classifications)
+
+    return {
+        "n_agents": total,
+        "types": {t: {"count": c, "pct": round(c / total * 100, 1)} for t, c in counts.items()},
+        "classifications": classifications,
+    }
+
+
+def marker_summary(df: pd.DataFrame, content_col: str = "content",
+                    author_col: str = "author_id") -> dict:
+    """Full LLM marker analysis summary."""
+    texts = df[content_col]
+
+    # Overall marker prevalence
+    prevalence = marker_prevalence(texts)
+    any_marker_pct = posts_with_any_marker(texts)
+
+    # Per-author density
+    author_density = per_author_marker_density(df, content_col, author_col)
+
+    # Agent type classification
+    agent_types = classify_agent_types(df, content_col, author_col)
+
+    result = {
+        "pct_posts_with_marker": round(any_marker_pct * 100, 1),
+        "n_agents_classified": agent_types["n_agents"],
+    }
+
+    # Add type percentages
+    for t, info in agent_types["types"].items():
+        result[f"pct_{t}"] = info["pct"]
+
+    # Author density stats
+    if len(author_density) > 0:
+        result["author_mean_marker_density"] = round(float(author_density["marker_density"].mean()), 3)
+        result["author_median_marker_density"] = round(float(author_density["marker_density"].median()), 3)
+        result["pct_authors_zero_markers"] = round(
+            float((author_density["marker_density"] == 0).mean() * 100), 1
+        )
+        result["pct_authors_high_markers"] = round(
+            float((author_density["marker_density"] > 0.3).mean() * 100), 1
+        )
+
+    # Top markers by prevalence
+    top_markers = sorted(prevalence.items(), key=lambda x: -x[1])[:10]
+    result["top_markers"] = {m: round(v * 100, 2) for m, v in top_markers}
+
+    return result
+
+
 # ── Score / karma economy analysis ──────────────────────────────────
 
 def score_distribution(df: pd.DataFrame, score_col: str = "score") -> dict:

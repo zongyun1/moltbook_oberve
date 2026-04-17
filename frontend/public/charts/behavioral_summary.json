@@ -33,6 +33,29 @@
       "gini_score": 0.978,
       "n_scored": 27732
     },
+    "markers": {
+      "pct_posts_with_marker": 10.1,
+      "n_agents_classified": 1733,
+      "pct_mixed": 91.6,
+      "pct_gpt_verbose": 5.1,
+      "pct_terse_bot": 3.3,
+      "author_mean_marker_density": 0.099,
+      "author_median_marker_density": 0.0,
+      "pct_authors_zero_markers": 74.1,
+      "pct_authors_high_markers": 11.9,
+      "top_markers": {
+        "navigat": 2.01,
+        "crucial": 1.8,
+        "robust": 1.74,
+        "resonates": 1.67,
+        "leverage": 1.08,
+        "realm": 0.82,
+        "foster": 0.65,
+        "nuanced": 0.53,
+        "comprehensive": 0.49,
+        "paradigm": 0.35
+      }
+    },
     "n_records": 27732
   },
   "reddit": {
@@ -59,6 +82,9 @@
       "n_authors_analyzed": 2830
     },
     "karma": {},
+    "markers": {
+      "pct_posts_with_marker": 1.5
+    },
     "n_records": 21677
   }
 }

@@ -29,6 +29,11 @@ from pipeline.analyze.behavioral import (
     linguistic_summary,
     score_distribution,
     type_token_ratio,
+    marker_prevalence,
+    posts_with_any_marker,
+    per_author_marker_density,
+    classify_agent_types,
+    marker_summary,
 )
 from pipeline.analyze.plots import (
     plot_circadian,
@@ -36,6 +41,9 @@ from pipeline.analyze.plots import (
     plot_linguistic_comparison,
     plot_ttr_distribution,
     plot_score_distribution,
+    plot_marker_prevalence,
+    plot_agent_types,
+    plot_marker_density_hist,
 )
 
 
@@ -149,6 +157,51 @@ def main():
     # Reddit CMV doesn't have scores, so pass None
     plot_score_distribution(molt_scores, None, out_dir)
 
+    # ── 4. LLM Marker Analysis ──────────────────────────────────────
+    print("\n=== LLM MARKER ANALYSIS ===")
+
+    molt_prev = marker_prevalence(molt_df["content"])
+    reddit_prev = marker_prevalence(reddit_df["content"])
+
+    molt_any = posts_with_any_marker(molt_df["content"])
+    reddit_any = posts_with_any_marker(reddit_df["content"])
+    print(f"  Posts with any marker:  Moltbook={molt_any*100:.1f}%  Reddit={reddit_any*100:.1f}%")
+
+    # Top markers by ratio
+    print("  Top markers by Moltbook/Reddit ratio:")
+    for m in sorted(molt_prev.keys(), key=lambda m: -(molt_prev[m] / max(reddit_prev.get(m, 0.00001), 0.00001)))[:8]:
+        mb_pct = molt_prev[m] * 100
+        rd_pct = reddit_prev.get(m, 0) * 100
+        ratio = mb_pct / rd_pct if rd_pct > 0 else float("inf")
+        print(f"    {m:20s}  MB={mb_pct:.2f}%  RD={rd_pct:.2f}%  ratio={ratio:.1f}x")
+
+    plot_marker_prevalence(molt_prev, reddit_prev, out_dir)
+
+    # Agent type classification
+    molt_types = classify_agent_types(molt_df, "content", "author_id")
+    print(f"\n  Agent types (n={molt_types['n_agents']}):")
+    for t, info in molt_types["types"].items():
+        print(f"    {t:15s}: {info['count']:4d} ({info['pct']:.1f}%)")
+
+    plot_agent_types(molt_types, out_dir)
+
+    # Per-author marker density
+    molt_author_density = per_author_marker_density(molt_df, "content", "author_id")
+    if len(molt_author_density) > 0:
+        print(f"\n  Author marker density (n={len(molt_author_density)}):")
+        print(f"    Mean={molt_author_density['marker_density'].mean():.3f}  "
+              f"Median={molt_author_density['marker_density'].median():.3f}")
+        zero_pct = (molt_author_density["marker_density"] == 0).mean() * 100
+        high_pct = (molt_author_density["marker_density"] > 0.3).mean() * 100
+        print(f"    Zero markers: {zero_pct:.1f}%  High (>0.3): {high_pct:.1f}%")
+        plot_marker_density_hist(molt_author_density, out_dir)
+
+    # Marker summary for JSON
+    molt_markers = marker_summary(molt_df, "content", "author_id")
+    reddit_markers = {
+        "pct_posts_with_marker": round(reddit_any * 100, 1),
+    }
+
     # ── Save summary JSON ────────────────────────────────────────────
     import json
     summary = {
@@ -156,12 +209,14 @@ def main():
             "circadian": molt_circ,
             "linguistic": molt_ling,
             "karma": molt_sd,
+            "markers": molt_markers,
             "n_records": len(molt_df),
         },
         "reddit": {
             "circadian": reddit_circ,
             "linguistic": reddit_ling,
             "karma": {},
+            "markers": reddit_markers,
             "n_records": len(reddit_df),
         },
     }
@@ -169,11 +224,14 @@ def main():
         json.dump(summary, f, indent=2, default=str)
 
     print(f"\nDone. Charts saved to {out_dir}/")
-    print("  b1_circadian.png  — hour-of-day comparison")
-    print("  b1_dow.png        — day-of-week comparison")
-    print("  b2_linguistic.png — linguistic metrics bar chart")
-    print("  b2_ttr_dist.png   — TTR distribution overlay")
-    print("  b3_scores.png     — score distribution")
+    print("  b1_circadian.png    — hour-of-day comparison")
+    print("  b1_dow.png          — day-of-week comparison")
+    print("  b2_linguistic.png   — linguistic metrics bar chart")
+    print("  b2_ttr_dist.png     — TTR distribution overlay")
+    print("  b3_scores.png       — score distribution")
+    print("  b4_markers.png      — LLM marker prevalence comparison")
+    print("  b4_agent_types.png  — agent type classification")
+    print("  b4_density_hist.png — per-author marker density")
 
 
 if __name__ == "__main__":
