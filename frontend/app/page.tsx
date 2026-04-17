@@ -16,20 +16,10 @@ interface Post {
 
 interface Stats {
   total_agents?: number;
+  verified_agents?: number;
   total_posts?: number;
   total_comments?: number;
   total_submolts?: number;
-  active_1h?: number;
-  active_24h?: number;
-  posts_today?: number;
-  sentiment?: number;
-}
-
-interface Trend {
-  word: string;
-  count: number;
-  change?: number;
-  change_pct?: number;
 }
 
 interface Agent {
@@ -69,7 +59,6 @@ function fmtNum(v: number): string {
 export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [stats, setStats] = useState<Stats>({});
-  const [trends, setTrends] = useState<Trend[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [submolts, setSubmolts] = useState<Submolt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,6 +98,7 @@ export default function Dashboard() {
         // API returns camelCase: totalAgents, totalPosts, totalComments, totalSubmolts, verifiedAgents
         setStats({
           total_agents: data.totalAgents || 0,
+          verified_agents: data.verifiedAgents || 0,
           total_posts: data.totalPosts || 0,
           total_comments: data.totalComments || 0,
           total_submolts: data.totalSubmolts || 0,
@@ -291,43 +281,17 @@ export default function Dashboard() {
                   <span className="obs-stat-val">{fmtNum(stats.total_agents || 0)}</span>
                 </div>
                 <div className="obs-stat-row">
-                  <span className="obs-stat-label">Posts Today</span>
-                  <span className="obs-stat-val">{fmtNum(stats.posts_today || 0)}</span>
+                  <span className="obs-stat-label">Verified Agents</span>
+                  <span className="obs-stat-val accent">{fmtNum(stats.verified_agents || 0)}</span>
                 </div>
                 <div className="obs-stat-row">
-                  <span className="obs-stat-label">Active (1h)</span>
-                  <span className="obs-stat-val accent">{fmtNum(stats.active_1h || 0)}</span>
+                  <span className="obs-stat-label">Total Posts</span>
+                  <span className="obs-stat-val">{fmtNum(stats.total_posts || 0)}</span>
                 </div>
-                {stats.sentiment !== undefined && (
-                  <div className="obs-stat-row">
-                    <span className="obs-stat-label">Sentiment</span>
-                    <span className={`obs-stat-val ${(stats.sentiment || 0) >= 0 ? "green" : "red"}`}>
-                      {(stats.sentiment || 0) >= 0 ? "+" : ""}{(stats.sentiment || 0).toFixed(2)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Trending */}
-            <div className="obs-card">
-              <h3 className="obs-card-title">
-                <span className="obs-icon">&#x1F525;</span> Trending
-              </h3>
-              <div className="obs-trend-list">
-                {trends.slice(0, 8).map((t, i) => (
-                  <div key={i} className="obs-trend-row">
-                    <span className="obs-trend-word">#{t.word}</span>
-                    {t.change_pct !== undefined && t.change_pct > 0 && (
-                      <span className="obs-trend-change">
-                        &uarr; {t.change_pct}%
-                      </span>
-                    )}
-                  </div>
-                ))}
-                {trends.length === 0 && !loading && (
-                  <span className="obs-muted">No trend data yet</span>
-                )}
+                <div className="obs-stat-row">
+                  <span className="obs-stat-label">Total Comments</span>
+                  <span className="obs-stat-val">{fmtNum(stats.total_comments || 0)}</span>
+                </div>
               </div>
             </div>
 
@@ -350,8 +314,8 @@ export default function Dashboard() {
                   <div className="obs-platform-label">Submolts</div>
                 </div>
                 <div className="obs-platform-stat">
-                  <div className="obs-platform-val green">{fmtNum(stats.active_24h || 0)}</div>
-                  <div className="obs-platform-label">Active 24h</div>
+                  <div className="obs-platform-val green">{fmtNum(stats.verified_agents || 0)}</div>
+                  <div className="obs-platform-label">Verified</div>
                 </div>
               </div>
             </div>
